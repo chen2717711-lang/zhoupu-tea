@@ -1,0 +1,593 @@
+```html
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>聯絡我們管理</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family:
+                "Noto Sans TC",
+                "Microsoft JhengHei",
+                sans-serif;
+            background: #f5f3ee;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 35px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 30px;
+            color: #3f5f45;
+        }
+
+        label {
+            display: block;
+            margin-top: 20px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+        }
+
+        textarea {
+            min-height: 130px;
+            resize: vertical;
+        }
+
+        .qrcode-box {
+            margin-top: 10px;
+            padding: 20px;
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .qrcode-preview {
+            display: none;
+            width: 220px;
+            height: 220px;
+            object-fit: contain;
+            margin: 20px auto;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: white;
+        }
+
+        .save-button {
+            width: 100%;
+            margin-top: 30px;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #4f6f52;
+            color: white;
+            font-size: 17px;
+            cursor: pointer;
+        }
+
+        .save-button:hover {
+            background: #3f5f45;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #4f6f52;
+            text-decoration: none;
+        }
+
+        #message {
+            margin-top: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <a href="dashboard.html" class="back-button">
+        ← 回到後台
+    </a>
+
+    <div class="card">
+
+        <h1>聯絡我們</h1>
+
+        <label>
+            聯絡我們介紹
+        </label>
+
+        <textarea
+            id="contact_text"
+            placeholder="輸入聯絡我們的介紹文字"></textarea>
+
+
+        <label>
+            📍 地址
+        </label>
+
+        <input
+            type="text"
+            id="contact_address"
+            placeholder="例如：高雄市六龜區……">
+
+
+        <label>
+            ☎️ 電話
+        </label>
+
+        <input
+            type="text"
+            id="contact_phone"
+            placeholder="例如：07-1234567">
+
+
+        <label>
+            ✉️ Email
+        </label>
+
+        <input
+            type="email"
+            id="contact_email"
+            placeholder="例如：example@email.com">
+
+
+        <label>
+    🕐 聯絡時間
+</label>
+
+<input
+    type="text"
+    id="contact_hours"
+    placeholder="例如：每日 09:00～17:00">
+
+
+<label>
+    LINE ID
+</label>
+
+<input
+    type="text"
+    id="contact_line"
+    placeholder="例如：zhoupu123">
+
+
+<label>
+    📱 QR Code
+</label>
+
+<div class="qrcode-box">
+
+    <input
+        type="file"
+        id="contact_qrcode_file"
+        accept="image/*">
+
+    <img
+        id="contact_qrcode_preview"
+        class="qrcode-preview"
+        alt="QR Code 預覽">
+
+    <div>
+        選擇 QR Code 圖片後會顯示在這裡
+    </div>
+
+</div>
+
+<button
+    class="save-button"
+    onclick="saveContact()">
+    儲存聯絡資訊
+</button>
+
+<div id="message"></div>
+<script>
+
+const SUPABASE_URL =
+    'https://tbakknfdijlwzggqrrzc.supabase.co';
+
+const SUPABASE_KEY =
+    'sb_publishable_C4MU15NKj3NsB24466kMYQ_G9OQT93-';
+
+const supabaseClient =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+// ==============================
+// QR Code 預覽
+// ==============================
+
+document
+    .getElementById('contact_qrcode_file')
+    .addEventListener('change', function(event) {
+
+        const file = event.target.files[0];
+
+        if (!file) {
+            return;
+        }
+
+        const preview =
+            document.getElementById(
+                'contact_qrcode_preview'
+            );
+
+        preview.src =
+            URL.createObjectURL(file);
+
+        preview.style.display = 'block';
+
+    });
+
+
+// // ==============================
+// 載入聯絡資訊
+// ==============================
+
+async function loadContact() {
+
+    const { data, error } =
+        await supabaseClient
+            .from('site_content')
+            .select('id, content')
+            .eq('key', 'contact')
+            .maybeSingle();
+
+    if (error) {
+
+        console.error(
+            '讀取聯絡資訊失敗：',
+            error
+        );
+
+        return;
+    }
+
+    if (!data) {
+        return;
+    }
+
+    try {
+
+        const contact =
+            JSON.parse(data.content);
+
+        document.getElementById(
+            'contact_text'
+        ).value =
+            contact.text || '';
+
+        document.getElementById(
+            'contact_address'
+        ).value =
+            contact.address || '';
+
+        document.getElementById(
+            'contact_phone'
+        ).value =
+            contact.phone || '';
+
+        document.getElementById(
+            'contact_email'
+        ).value =
+            contact.email || '';
+
+        document.getElementById(
+            'contact_hours'
+        ).value =
+            contact.hours || '';
+
+        document.getElementById(
+            'contact_line'
+        ).value =
+            contact.line || '';
+
+
+        // 顯示已儲存的 QR Code
+
+        if (contact.qrcode) {
+
+            const preview =
+                document.getElementById(
+                    'contact_qrcode_preview'
+                );
+
+            preview.src =
+                contact.qrcode;
+
+            preview.style.display =
+                'block';
+        }
+
+    } catch (error) {
+
+        console.error(
+            '聯絡資訊格式錯誤：',
+            error
+        );
+
+    }
+
+}
+
+
+// ==============================
+// 儲存聯絡資訊
+// ==============================
+
+async function saveContact() {
+
+    const message =
+        document.getElementById(
+            'message'
+        );
+
+    message.textContent =
+        '正在儲存，請稍候...';
+
+
+    // 找目前資料
+
+    const { data: existing, error: findError } =
+        await supabaseClient
+            .from('site_content')
+            .select('id, content')
+            .eq('key', 'contact')
+            .maybeSingle();
+
+
+    if (findError) {
+
+        message.textContent =
+            '讀取資料失敗：' +
+            findError.message;
+
+        return;
+    }
+
+
+    // 保留原本 QR Code
+
+    let qrcodeUrl = '';
+
+    if (existing) {
+
+        try {
+
+            const oldContact =
+                JSON.parse(existing.content);
+
+            qrcodeUrl =
+                oldContact.qrcode || '';
+
+        } catch (error) {
+
+            qrcodeUrl = '';
+
+        }
+
+    }
+
+
+    // ==============================
+    // 如果選了新的 QR Code，就上傳
+    // ==============================
+
+    const file =
+        document.getElementById(
+            'contact_qrcode_file'
+        ).files[0];
+
+
+    if (file) {
+
+        message.textContent =
+            '正在上傳 QR Code...';
+
+
+        const fileExt =
+            file.name
+                .split('.')
+                .pop();
+
+
+        const fileName =
+            'qrcode-' +
+            Date.now() +
+            '.' +
+            fileExt;
+
+
+        const { error: uploadError } =
+            await supabaseClient
+                .storage
+                .from('site-images')
+                .upload(
+                    fileName,
+                    file
+                );
+
+
+        if (uploadError) {
+
+            console.error(
+                'QR Code 上傳失敗：',
+                uploadError
+            );
+
+            message.textContent =
+                'QR Code 上傳失敗：' +
+                uploadError.message;
+
+            return;
+        }
+
+
+        const { data: publicData } =
+            supabaseClient
+                .storage
+                .from('site-images')
+                .getPublicUrl(
+                    fileName
+                );
+
+
+        qrcodeUrl =
+            publicData.publicUrl;
+
+    }
+
+
+    // ==============================
+    // 建立聯絡資料
+    // ==============================
+
+    const contactData = {
+
+        text:
+            document.getElementById(
+                'contact_text'
+            ).value.trim(),
+
+        address:
+            document.getElementById(
+                'contact_address'
+            ).value.trim(),
+
+        phone:
+            document.getElementById(
+                'contact_phone'
+            ).value.trim(),
+
+        email:
+            document.getElementById(
+                'contact_email'
+            ).value.trim(),
+
+        hours:
+            document.getElementById(
+                'contact_hours'
+            ).value.trim(),
+            line:
+    document.getElementById(
+        'contact_line'
+    ).value,
+
+        qrcode:
+            qrcodeUrl
+
+    };
+
+
+    // ==============================
+    // 儲存到 Supabase
+    // ==============================
+
+    let error;
+
+
+    if (existing) {
+
+        const result =
+            await supabaseClient
+                .from('site_content')
+                .update({
+                    content:
+                        JSON.stringify(
+                            contactData
+                        )
+                })
+                .eq(
+                    'id',
+                    existing.id
+                );
+
+        error =
+            result.error;
+
+    } else {
+
+        const result =
+            await supabaseClient
+                .from('site_content')
+                .insert({
+                    key: 'contact',
+                    content:
+                        JSON.stringify(
+                            contactData
+                        )
+                });
+
+        error =
+            result.error;
+
+    }
+
+
+    if (error) {
+
+        console.error(
+            '儲存失敗：',
+            error
+        );
+
+        message.textContent =
+            '儲存失敗：' +
+            error.message;
+
+        return;
+    }
+
+
+    message.textContent =
+        '✓ 聯絡資訊已成功儲存！';
+
+}
+
+
+// ==============================
+// 開啟頁面時載入
+// ==============================
+
+loadContact();
+
+</script>
+        </
+```

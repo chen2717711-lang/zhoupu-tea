@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+
+<html lang="zh-Hant">
+
+<head>
+
+```
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>最新消息｜拙璞山茶</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        font-family:
+            Arial,
+            "Microsoft JhengHei",
+            sans-serif;
+
+        background: #f5f3ef;
+
+        color: #333;
+
+    }
+
+    .container {
+
+        max-width: 900px;
+
+        margin: auto;
+
+        padding: 50px 20px;
+
+    }
+
+    .back {
+
+        display: inline-block;
+
+        margin-bottom: 30px;
+
+        color: #5b7052;
+
+        text-decoration: none;
+
+        font-size: 16px;
+
+    }
+
+    .news-detail {
+
+        background: white;
+
+        padding: 40px;
+
+        border-radius: 12px;
+
+        box-shadow:
+            0 3px 15px rgba(0,0,0,0.08);
+
+    }
+
+    .news-date {
+
+        color: #888;
+
+        font-size: 15px;
+
+        margin-bottom: 12px;
+
+    }
+
+    h1 {
+
+        margin-top: 0;
+
+        margin-bottom: 25px;
+
+        font-size: 32px;
+
+        line-height: 1.4;
+
+    }
+
+    .news-image {
+
+        width: 100%;
+
+        max-height: 550px;
+
+        object-fit: cover;
+
+        border-radius: 10px;
+
+        display: block;
+
+        margin: 25px 0;
+
+    }
+
+    .news-content {
+
+        font-size: 18px;
+
+        line-height: 2;
+
+        white-space: pre-line;
+
+    }
+
+    .loading {
+
+        text-align: center;
+
+        color: #777;
+
+    }
+
+    @media (max-width: 768px) {
+
+        .container {
+
+            padding: 25px 15px;
+
+        }
+
+        .news-detail {
+
+            padding: 25px 20px;
+
+        }
+
+        h1 {
+
+            font-size: 26px;
+
+        }
+
+        .news-content {
+
+            font-size: 16px;
+
+        }
+
+    }
+
+</style>
+```
+
+</head>
+
+<body>
+
+<div class="container">
+
+```
+<a
+    href="index.html#news"
+    class="back">
+    ← 返回最新消息
+</a>
+
+
+<div
+    class="news-detail"
+    id="newsDetail">
+
+    <div class="loading">
+        正在載入最新消息...
+    </div>
+
+</div>
+```
+
+</div>
+
+<script>
+
+    // ==========================
+    // Supabase
+    // ==========================
+
+    const SUPABASE_URL =
+        'https://tbakknfdijlwzggqrrzc.supabase.co';
+
+
+    // 請放你原本使用的 Supabase Publishable Key
+    const SUPABASE_KEY =
+        'sb_publishable_C4MU15NKj3NsB24466kMYQ_G9OQT93-';
+
+
+    const supabaseClient =
+        supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_KEY
+        );
+
+
+    // ==========================
+    // 取得網址上的新聞 ID
+    // ==========================
+
+    const params =
+        new URLSearchParams(
+            window.location.search
+        );
+
+    const newsId =
+        params.get('id');
+
+
+    // ==========================
+    // HTML 安全處理
+    // ==========================
+
+    function escapeHtml(text) {
+
+        return String(text)
+
+            .replace(
+                /&/g,
+                '&amp;'
+            )
+
+            .replace(
+                /</g,
+                '&lt;'
+            )
+
+            .replace(
+                />/g,
+                '&gt;'
+            )
+
+            .replace(
+                /"/g,
+                '&quot;'
+            )
+
+            .replace(
+                /'/g,
+                '&#039;'
+            );
+
+    }
+
+
+    // ==========================
+    // 日期格式
+    // ==========================
+
+    function formatDate(date) {
+
+        if (!date) {
+
+            return '最新消息';
+
+        }
+
+        return String(date)
+            .split('T')[0]
+            .replace(
+                /-/g,
+                '.'
+            );
+
+    }
+
+
+    // ==========================
+    // 讀取新聞
+    // ==========================
+
+    async function loadNewsDetail() {
+
+        const newsDetail =
+            document.getElementById(
+                'newsDetail'
+            );
+
+
+        if (!newsId) {
+
+            newsDetail.innerHTML = `
+
+                <h1>找不到這則消息</h1>
+
+                <p>
+                    請從最新消息列表進入。
+                </p>
+
+            `;
+
+            return;
+
+        }
+
+
+        const { data, error } =
+            await supabaseClient
+
+                .from('site_content')
+
+                .select(
+                    'id, content'
+                )
+
+                .eq(
+                    'id',
+                    newsId
+                )
+
+                .eq(
+                    'key',
+                    'news'
+                )
+
+                .single();
+
+
+        if (error || !data) {
+
+            console.error(
+                '讀取新聞失敗：',
+                error
+            );
+
+
+            newsDetail.innerHTML = `
+
+                <h1>找不到這則消息</h1>
+
+                <p>
+                    這則消息可能已經被刪除。
+                </p>
+
+            `;
+
+            return;
+
+        }
+
+
+        try {
+
+            const news =
+                JSON.parse(
+                    data.content
+                );
+
+
+            newsDetail.innerHTML = `
+
+                <div class="news-date">
+
+                    ${formatDate(news.date)}
+
+                </div>
+
+
+                <h1>
+
+                    ${escapeHtml(
+                        news.title || ''
+                    )}
+
+                </h1>
+
+
+                ${
+                    news.image
+                    ? `
+
+                        <img
+                            class="news-image"
+                            src="${news.image}"
+                            alt="">
+
+                      `
+                    : ''
+                }
+
+
+                <div class="news-content">
+
+                    ${escapeHtml(
+                        news.content || ''
+                    )}
+
+                </div>
+
+            `;
+
+
+        } catch (error) {
+
+            console.error(
+                '新聞資料格式錯誤：',
+                error
+            );
+
+
+            newsDetail.innerHTML = `
+
+                <h1>消息資料錯誤</h1>
+
+            `;
+
+        }
+
+    }
+
+
+    // ==========================
+    // 啟動
+    // ==========================
+
+    loadNewsDetail();
+
+</script>
+
+</body>
+
+</html>

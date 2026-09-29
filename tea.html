@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>拙璞山茶｜茶葉產品管理</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, "Noto Sans TC", sans-serif;
+            background: #f5f3ee;
+            color: #333;
+        }
+
+        header {
+            background: #5d7658;
+            color: white;
+            padding: 20px;
+        }
+
+        header h1 {
+            margin: 0 0 5px 0;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 900px;
+            margin: 30px auto;
+        }
+
+        .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .back {
+            background: #777;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+        }
+
+        .product-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #5d7658;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            margin-bottom: 18px;
+        }
+
+        textarea {
+            min-height: 180px;
+            resize: vertical;
+        }
+
+        .save-product {
+            width: 100%;
+            padding: 12px;
+            background: #5d7658;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        .save-product:hover {
+            background: #4d6549;
+        }
+
+        .add-product {
+            width: 100%;
+            padding: 14px;
+            background: #8b6f47;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .add-product:hover {
+            background: #745b3a;
+        }
+
+        .delete-product {
+            width: 100%;
+            padding: 10px;
+            background: #c0392b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .delete-product:hover {
+            background: #a93226;
+        }
+
+        .hint {
+            color: #777;
+            font-size: 14px;
+            margin-top: -10px;
+            margin-bottom: 18px;
+        }
+
+        .preview {
+            max-width: 200px;
+            max-height: 150px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        #message {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <h1>拙璞山茶</h1>
+
+    <div>茶葉產品管理</div>
+
+</header>
+
+
+<div class="container">
+
+
+    <div class="top">
+
+        <h2>茶葉產品</h2>
+
+        <button
+            class="back"
+            onclick="location.href='dashboard.html'">
+
+            ← 返回後台
+
+        </button>
+
+    </div>
+
+
+    <!-- 所有茶葉產品會放在這裡 -->
+
+    <div id="productsContainer"></div>
+
+
+    <!-- 新增茶葉產品 -->
+
+    <button
+        class="add-product"
+        onclick="addProduct()">
+
+        ＋ 新增茶葉產品
+
+    </button>
+
+
+    <div id="message"></div>
+
+
+</div>
+
+
+<script>
+
+
+const SUPABASE_URL =
+    'https://tbakknfdijlwzggqrrzc.supabase.co';
+
+
+const SUPABASE_KEY =
+    'sb_publishable_C4MU15NKj3NsB24466kMYQ_G9OQT93-';
+
+
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+
+/* 檢查登入 */
+
+async function checkLogin() {
+
+    const {
+        data,
+        error
+    } = await supabaseClient.auth.getSession();
+
+
+    if (error || !data.session) {
+
+        window.location.href = 'admin.html';
+
+        return false;
+
+    }
+
+
+    return true;
+
+}
+
+
+
+/* 建立一個茶葉產品區塊 */
+
+function createProductBox(product = {}, index = 0) {
+
+    const box =
+        document.createElement('div');
+
+    box.className = 'box product-box';
+
+
+    box.innerHTML = `
+
+        <div class="product-title">
+            茶葉產品 ${index + 1}
+        </div>
+
+
+        <label>茶葉名稱</label>
+
+        <input
+            type="text"
+            class="tea-name"
+            placeholder="例如：高山烏龍茶"
+            value="${escapeHtml(product.name || '')}">
+
+
+        <label>茶葉價格</label>
+
+        <input
+            type="text"
+            class="tea-price"
+            placeholder="例如：600 元"
+            value="${escapeHtml(product.price || '')}">
+
+
+        <label>茶葉介紹</label>
+
+        <textarea
+            class="tea-description"
+            placeholder="輸入茶葉產品介紹...">${escapeHtml(product.description || '')}</textarea>
+
+
+        <label>茶葉圖片</label>
+
+        <input
+            type="file"
+            class="tea-image"
+            accept="image/*">
+
+
+        <div class="hint">
+            可以上傳茶葉產品照片。
+        </div>
+
+
+        <img
+            class="preview"
+            src="${product.image || ''}"
+            style="${product.image ? 'display:block;' : 'display:none;'}">
+
+
+        <button
+            class="save-product"
+            onclick="saveProduct(this)">
+
+            儲存這個茶葉產品
+
+        </button>
+
+
+        <button
+            class="delete-product"
+            onclick="deleteProduct(this)">
+
+            刪除這個茶葉產品
+
+        </button>
+
+    `;
+
+
+    const imageInput =
+        box.querySelector('.tea-image');
+
+    const preview =
+        box.querySelector('.preview');
+
+
+    imageInput.addEventListener('change', function () {
+
+        const file =
+            this.files[0];
+
+        if (!file) return;
+
+
+        const reader =
+            new FileReader();
+
+
+        reader.onload = function (e) {
+
+            preview.src =
+                e.target.result;
+
+            preview.style.display =
+                'block';
+
+        };
+
+
+        reader.readAsDataURL(file);
+
+    });
+
+
+    box.dataset.image =
+        product.image || '';
+
+
+    box.dataset.productId =
+        product.id || '';
+
+
+    return box;
+
+}
+
+
+
+/* 避免特殊文字造成 HTML 問題 */
+
+function escapeHtml(text) {
+
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+}
+
+
+
+/* 新增茶葉產品 */
+
+function addProduct() {
+
+    const container =
+        document.getElementById('productsContainer');
+
+
+    const productBoxes =
+        container.querySelectorAll('.product-box');
+
+
+    const newProduct =
+        createProductBox(
+            {},
+            productBoxes.length
+        );
+
+
+    container.appendChild(newProduct);
+
+
+    updateProductNumbers();
+
+
+    newProduct.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+    });
+
+}
+
+
+
+/* 更新產品編號 */
+
+function updateProductNumbers() {
+
+    const boxes =
+        document.querySelectorAll('.product-box');
+
+
+    boxes.forEach(function (box, index) {
+
+        const title =
+            box.querySelector('.product-title');
+
+
+        title.textContent =
+            '茶葉產品 ' + (index + 1);
+
+    });
+
+}
+
+
+
+/* 讀取所有茶葉產品 */
+
+async function loadContent() {
+
+    const loggedIn =
+        await checkLogin();
+
+    if (!loggedIn) return;
+
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from('site_content')
+            .select('id, content')
+            .eq('key', 'tea_product')
+            .order('id', {
+                ascending: true
+            });
+
+
+    if (error) {
+
+        console.error(
+            '讀取茶葉產品失敗：',
+            error
+        );
+
+
+        document.getElementById('message').textContent =
+            '讀取資料失敗：' +
+            error.message;
+
+
+        return;
+
+    }
+
+
+    const container =
+        document.getElementById('productsContainer');
+
+
+    container.innerHTML = '';
+
+
+    /* 如果目前沒有產品 */
+
+    if (!data || data.length === 0) {
+
+        addProduct();
+
+        return;
+
+    }
+
+
+    /* 載入所有產品 */
+
+    data.forEach(function (row, index) {
+
+        try {
+
+            const product =
+                JSON.parse(row.content);
+
+
+            product.id =
+                row.id;
+
+
+            const box =
+                createProductBox(
+                    product,
+                    index
+                );
+
+
+            container.appendChild(box);
+
+
+        } catch (error) {
+
+            console.error(
+                '茶葉資料格式錯誤：',
+                error
+            );
+
+        }
+
+    });
+
+
+    updateProductNumbers();
+
+}
+
+
+
+/* 儲存單一茶葉產品 */
+
+async function saveProduct(button) {
+
+    const loggedIn =
+        await checkLogin();
+
+    if (!loggedIn) return;
+
+
+    const box =
+        button.closest('.product-box');
+
+
+    const message =
+        document.getElementById('message');
+
+
+    message.style.color =
+        '#333';
+
+    message.textContent =
+        '正在儲存...';
+
+
+    const teaName =
+        box.querySelector('.tea-name').value;
+
+
+    const teaPrice =
+        box.querySelector('.tea-price').value;
+
+
+    const teaDescription =
+        box.querySelector('.tea-description').value;
+
+
+    let teaImageUrl =
+        box.dataset.image || '';
+
+
+    const imageInput =
+        box.querySelector('.tea-image');
+
+
+    const teaImageFile =
+        imageInput.files[0];
+
+
+    /* 有選新圖片 */
+
+    if (teaImageFile) {
+
+        message.textContent =
+            '正在上傳茶葉圖片...';
+
+
+        const fileExt =
+            teaImageFile.name
+                .split('.')
+                .pop();
+
+
+        const fileName =
+            `tea-${Date.now()}.${fileExt}`;
+
+
+        const {
+            error: uploadError
+        } =
+            await supabaseClient
+                .storage
+                .from('site-images')
+                .upload(
+                    fileName,
+                    teaImageFile
+                );
+
+
+        if (uploadError) {
+
+            message.style.color =
+                '#c0392b';
+
+
+            message.textContent =
+                '茶葉圖片上傳失敗：' +
+                uploadError.message;
+
+
+            console.error(
+                uploadError
+            );
+
+
+            return;
+
+        }
+
+
+        const {
+            data: publicData
+        } =
+            supabaseClient
+                .storage
+                .from('site-images')
+                .getPublicUrl(
+                    fileName
+                );
+
+
+        teaImageUrl =
+            publicData.publicUrl;
+
+
+        box.dataset.image =
+            teaImageUrl;
+
+    }
+
+
+    const productData =
+        JSON.stringify({
+
+            name: teaName,
+
+            price: teaPrice,
+
+            description: teaDescription,
+
+            image: teaImageUrl
+
+        });
+
+
+    let saveError;
+
+
+    /* 如果原本已經有這筆產品，就更新 */
+
+    if (box.dataset.productId) {
+
+        const result =
+            await supabaseClient
+                .from('site_content')
+                .update({
+
+                    content: productData
+
+                })
+                .eq(
+                    'id',
+                    box.dataset.productId
+                );
+
+
+        saveError =
+            result.error;
+
+
+    } else {
+
+        /* 新產品 */
+
+        const {
+            data: newData,
+            error
+        } =
+            await supabaseClient
+                .from('site_content')
+                .insert({
+
+                    key: 'tea_product',
+
+                    content: productData
+
+                })
+                .select('id')
+                .single();
+
+
+        saveError =
+            error;
+
+
+        if (!error && newData) {
+
+            box.dataset.productId =
+                newData.id;
+
+        }
+
+    }
+
+
+    if (saveError) {
+
+        message.style.color =
+            '#c0392b';
+
+
+        message.textContent =
+            '儲存失敗：' +
+            saveError.message;
+
+
+        console.error(
+            saveError
+        );
+
+
+        return;
+
+    }
+
+
+    message.style.color =
+        '#2e7d32';
+
+
+    message.textContent =
+        '✓ 茶葉產品已成功儲存！';
+
+
+    /* 清除圖片選擇 */
+
+    imageInput.value = '';
+
+}
+
+
+
+/* 刪除茶葉產品 */
+
+async function deleteProduct(button) {
+
+    const loggedIn =
+        await checkLogin();
+
+    if (!loggedIn) return;
+
+
+    const box =
+        button.closest('.product-box');
+
+
+    const productId =
+        box.dataset.productId;
+
+
+    /* 如果還沒有儲存過，只從畫面移除 */
+
+    if (!productId) {
+
+        box.remove();
+
+        updateProductNumbers();
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            '確定要刪除這個茶葉產品嗎？'
+        );
+
+
+    if (!confirmed) return;
+
+
+    const {
+        error
+    } =
+        await supabaseClient
+            .from('site_content')
+            .delete()
+            .eq(
+                'id',
+                productId
+            );
+
+
+    if (error) {
+
+        const message =
+            document.getElementById('message');
+
+
+        message.style.color =
+            '#c0392b';
+
+
+        message.textContent =
+            '刪除失敗：' +
+            error.message;
+
+
+        console.error(
+            error
+        );
+
+
+        return;
+
+    }
+
+
+    box.remove();
+
+    updateProductNumbers();
+
+
+    const message =
+        document.getElementById('message');
+
+
+    message.style.color =
+        '#2e7d32';
+
+
+    message.textContent =
+        '✓ 茶葉產品已刪除！';
+
+}
+
+
+
+/* 開啟頁面 */
+
+loadContent();
+
+
+</script>
+
+
+</body>
+
+</html>

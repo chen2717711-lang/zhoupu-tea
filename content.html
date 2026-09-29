@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>拙璞山茶｜首頁內容管理</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, "Noto Sans TC", sans-serif;
+            background: #f5f3ee;
+            color: #333;
+        }
+
+        header {
+            background: #5d7658;
+            color: white;
+            padding: 20px;
+        }
+
+        header h1 {
+            margin: 0 0 5px 0;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 900px;
+            margin: 30px auto;
+        }
+
+        .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .back {
+            background: #777;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+        }
+
+        textarea {
+            min-height: 180px;
+            resize: vertical;
+        }
+
+        .save {
+            width: 100%;
+            padding: 14px;
+            background: #5d7658;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .save:hover {
+            background: #4d6549;
+        }
+
+        #message {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .hint {
+            color: #777;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+    </style>
+
+</head>
+
+<body>
+
+<header>
+
+    <h1>拙璞山茶</h1>
+    <div>首頁內容管理</div>
+
+</header>
+
+
+<div class="container">
+
+    <div class="top">
+
+        <h2>編輯首頁</h2>
+
+        <button
+            class="back"
+            onclick="location.href='dashboard.html'">
+
+            ← 返回後台
+
+        </button>
+
+    </div>
+
+
+    <!-- 網站標題 -->
+
+    <div class="box">
+
+        <label>網站標題</label>
+
+        <input
+            type="text"
+            id="site_title"
+            placeholder="例如：歡迎來到拙璞山茶 zhoupu">
+
+        <div class="hint">
+            這是首頁主要標題。
+        </div>
+
+    </div>
+
+<!-- 首頁背景圖片 -->
+
+<div class="box">
+
+    <label>首頁背景圖片</label>
+
+    <input
+        type="file"
+        id="hero_image"
+        accept="image/*">
+
+    <div class="hint">
+        建議使用橫向圖片，例如山茶園、茶園風景。
+    </div>
+
+</div>
+<!-- 品牌介紹 -->
+
+<div class="box">
+
+    <label>品牌介紹標題</label>
+
+    <input
+        type="text"
+        id="about_title"
+        placeholder="例如：做一杯女兒茶">
+
+        <label>品牌介紹圖片</label>
+
+<input
+    type="file"
+    id="about_image"
+    accept="image/*">
+    <label>品牌介紹</label>
+
+    <textarea
+        id="about_text"
+        placeholder="輸入拙璞山茶的品牌介紹..."></textarea>
+
+    <div class="hint">
+        可以放你之前提供的完整品牌故事。
+    </div>
+
+</div>
+
+
+<!-- 品牌理念 -->
+
+<div class="box">
+
+    <label>品牌理念主標題</label>
+
+    <input
+        type="text"
+        id="concept_main_title"
+        placeholder="例如：我們相信">
+
+    <label>品牌理念介紹</label>
+
+    <textarea
+        id="concept_text"
+        placeholder="輸入品牌理念的介紹內容..."></textarea>
+
+    <label>理念一標題</label>
+
+    <input
+        type="text"
+        id="concept_title1"
+        placeholder="例如：自然">
+
+    <label>理念一內容</label>
+
+    <textarea
+        id="concept_content1"
+        placeholder="輸入理念一的內容..."></textarea>
+
+    <label>理念二標題</label>
+
+    <input
+        type="text"
+        id="concept_title2"
+        placeholder="例如：樸實">
+
+    <label>理念二內容</label>
+
+    <textarea
+        id="concept_content2"
+        placeholder="輸入理念二的內容..."></textarea>
+
+    <label>理念三標題</label>
+
+    <input
+        type="text"
+        id="concept_title3"
+        placeholder="例如：用心">
+
+    <label>理念三內容</label>
+
+    <textarea
+        id="concept_content3"
+        placeholder="輸入理念三的內容..."></textarea>
+
+</div>
+
+
+    <button
+        class="save"
+        onclick="saveContent()">
+
+        儲存首頁內容
+
+    </button>
+
+
+    <div id="message"></div>
+
+</div>
+
+
+<script>
+
+const SUPABASE_URL =
+    'https://tbakknfdijlwzggqrrzc.supabase.co';
+
+const SUPABASE_KEY =
+    'sb_publishable_C4MU15NKj3NsB24466kMYQ_G9OQT93-';
+
+
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+
+/* 檢查登入 */
+
+async function checkLogin() {
+
+    const {
+        data,
+        error
+    } = await supabaseClient.auth.getSession();
+
+
+    if (error || !data.session) {
+
+        window.location.href = 'admin.html';
+
+        return false;
+
+    }
+
+    return true;
+}
+
+
+
+/* 讀取資料 */
+
+async function loadContent() {
+
+    const loggedIn = await checkLogin();
+
+    if (!loggedIn) return;
+
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from('site_content')
+        .select('*');
+
+
+    if (error) {
+
+        console.error(error);
+
+        document.getElementById('message').textContent =
+            '讀取資料失敗：' + error.message;
+
+        return;
+
+    }
+
+
+    console.log('目前首頁資料：', data);
+
+
+    data.forEach(item => {
+
+        if (item.key === 'site_title') {
+
+            document.getElementById('site_title').value =
+                item.content || '';
+
+        }
+
+
+        if (item.key === 'about_text') {
+
+            document.getElementById('about_text').value =
+                item.content || '';
+
+        }
+if (item.key === 'about_title') {
+    document.getElementById('about_title').value = item.content || '';
+}
+
+    if (item.key === 'concept_main_title') {
+        document.getElementById('concept_main_title').value =
+            item.content || '';
+    }
+if (item.key === 'concept_title1') {
+    document.getElementById('concept_title1').value = item.content || '';
+}
+
+if (item.key === 'concept_content1') {
+    document.getElementById('concept_content1').value = item.content || '';
+}
+
+if (item.key === 'concept_title2') {
+    document.getElementById('concept_title2').value = item.content || '';
+}
+
+if (item.key === 'concept_content2') {
+    document.getElementById('concept_content2').value = item.content || '';
+}
+
+if (item.key === 'concept_title3') {
+    document.getElementById('concept_title3').value = item.content || '';
+}
+
+if (item.key === 'concept_content3') {
+    document.getElementById('concept_content3').value = item.content || '';
+}
+
+        if (item.key === 'concept_text') {
+
+            document.getElementById('concept_text').value =
+                item.content || '';
+
+        }
+
+    });
+
+}
+
+
+
+/* 儲存資料 */
+
+async function saveContent() {
+
+    const message =
+        document.getElementById('message');
+
+
+    message.style.color = '#333';
+
+    message.textContent = '正在儲存...';
+
+
+  
+const contents = {
+
+    site_title:
+        document.getElementById('site_title').value,
+
+        hero_image:
+    '',
+    about_image:
+    '',
+    about_title:
+        document.getElementById('about_title').value,
+
+    about_text:
+        document.getElementById('about_text').value,
+
+    concept_main_title:
+        document.getElementById('concept_main_title').value,
+
+    concept_text:
+        document.getElementById('concept_text').value,
+
+    concept_title1:
+        document.getElementById('concept_title1').value,
+
+    concept_content1:
+        document.getElementById('concept_content1').value,
+
+    concept_title2:
+        document.getElementById('concept_title2').value,
+
+    concept_content2:
+        document.getElementById('concept_content2').value,
+
+    concept_title3:
+        document.getElementById('concept_title3').value,
+
+    concept_content3:
+        document.getElementById('concept_content3').value
+};
+// 上傳首頁背景圖片
+const heroImageInput =
+    document.getElementById('hero_image');
+
+const heroImageFile =
+    heroImageInput.files[0];
+
+if (heroImageFile) {
+
+    message.textContent =
+        '正在上傳首頁背景圖片...';
+
+    const fileExt =
+        heroImageFile.name.split('.').pop();
+
+    const fileName =
+        `hero-${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } =
+        await supabaseClient
+            .storage
+            .from('site-images')
+            .upload(fileName, heroImageFile);
+
+    if (uploadError) {
+
+        message.style.color = '#c0392b';
+
+        message.textContent =
+            '圖片上傳失敗：' +
+            uploadError.message;
+
+        console.error(uploadError);
+
+        return;
+    }
+
+    const { data: publicData } =
+        supabaseClient
+            .storage
+            .from('site-images')
+            .getPublicUrl(fileName);
+
+    contents.hero_image =
+        publicData.publicUrl;
+}
+    // 上傳品牌介紹圖片
+const aboutImageInput =
+    document.getElementById('about_image');
+
+const aboutImageFile =
+    aboutImageInput.files[0];
+
+if (aboutImageFile) {
+
+    message.textContent =
+        '正在上傳品牌介紹圖片...';
+
+    const fileExt =
+        aboutImageFile.name.split('.').pop();
+
+    const fileName =
+        `about-${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } =
+        await supabaseClient
+            .storage
+            .from('site-images')
+            .upload(fileName, aboutImageFile);
+
+    if (uploadError) {
+
+        message.style.color = '#c0392b';
+
+        message.textContent =
+            '品牌介紹圖片上傳失敗：' +
+            uploadError.message;
+
+        console.error(uploadError);
+
+        return;
+    }
+
+    const { data: publicData } =
+        supabaseClient
+            .storage
+            .from('site-images')
+            .getPublicUrl(fileName);
+
+    contents.about_image =
+        publicData.publicUrl;
+}
+
+
+    for (const key in contents) {
+if (
+    (key === 'hero_image' || key === 'about_image')
+    && contents[key] === ''
+) {
+    continue;
+}
+        const content = contents[key];
+
+
+        const {
+            data: existing,
+            error: findError
+        } = await supabaseClient
+            .from('site_content')
+            .select('id')
+            .eq('key', key)
+            .maybeSingle();
+
+
+        if (findError) {
+
+            message.style.color = '#c0392b';
+
+            message.textContent =
+                '讀取資料失敗：' + findError.message;
+
+            return;
+
+        }
+
+
+        let result;
+
+
+        if (existing) {
+
+            result = await supabaseClient
+                .from('site_content')
+                .update({
+                    content: content,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('key', key);
+
+        } else {
+
+            result = await supabaseClient
+                .from('site_content')
+                .insert({
+                    key: key,
+                    content: content
+                });
+
+        }
+
+
+        if (result.error) {
+
+            message.style.color = '#c0392b';
+
+            message.textContent =
+                '儲存失敗：' + result.error.message;
+
+            console.error(result.error);
+
+            return;
+
+        }
+
+    }
+
+
+    message.style.color = '#2e7d32';
+
+    message.textContent =
+        '✓ 首頁內容已成功儲存！';
+
+}
+
+
+loadContent();
+
+</script>
+
+</body>
+
+</html>

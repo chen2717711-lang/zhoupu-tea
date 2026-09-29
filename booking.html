@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>線上預約管理｜拙璞山茶</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, "Noto Sans TC", sans-serif;
+            background: #f5f3ee;
+            color: #333;
+        }
+
+        header {
+            background: #5d7658;
+            color: white;
+            padding: 20px;
+        }
+
+        header h1 {
+            margin: 0 0 5px;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 1100px;
+            margin: 30px auto;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 16px;
+            background: white;
+            color: #5d7658;
+            text-decoration: none;
+            border-radius: 8px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        }
+
+        .card h2 {
+            margin-top: 0;
+        }
+
+        .booking-item {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .booking-item h3 {
+            margin-top: 0;
+            color: #5d7658;
+        }
+
+        .booking-info {
+            line-height: 1.8;
+        }
+
+        .booking-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 6px;
+            background: #eee;
+            margin-top: 10px;
+        }
+
+        .delete-button {
+            margin-top: 15px;
+            padding: 9px 15px;
+            border: none;
+            border-radius: 6px;
+            background: #b85c5c;
+            color: white;
+            cursor: pointer;
+        }
+
+        .empty {
+            color: #777;
+            padding: 20px 0;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <h1>拙璞山茶</h1>
+
+    <div>
+        📅 線上預約管理
+    </div>
+
+</header>
+
+
+<div class="container">
+
+
+    <a
+        href="dashboard.html"
+        class="back-button">
+
+        ← 回管理後台
+
+    </a>
+
+
+    <div class="card">
+
+        <h2>📋 預約資料</h2>
+
+        <div id="bookingList">
+
+            <div class="empty">
+                正在載入預約資料...
+            </div>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+
+<script>
+
+
+const SUPABASE_URL =
+    'https://tbakknfdijlwzggqrrzc.supabase.co';
+
+
+const SUPABASE_KEY =
+    'sb_publishable_C4MU15NKj3NsB24466kMYQ_G9OQT93-';
+
+
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+
+async function loadBookings() {
+
+
+    const bookingList =
+        document.getElementById('bookingList');
+
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from('site_content')
+        .select('id, content')
+        .eq('key', 'booking')
+        .order('id', {
+            ascending: false
+        });
+
+
+    if (error) {
+
+        console.error(
+            '讀取預約資料失敗：',
+            error
+        );
+
+        bookingList.innerHTML = `
+            <div class="empty">
+                讀取預約資料失敗。
+            </div>
+        `;
+
+        return;
+    }
+
+
+    bookingList.innerHTML = '';
+
+
+    if (!data || data.length === 0) {
+
+        bookingList.innerHTML = `
+            <div class="empty">
+                目前沒有預約資料。
+            </div>
+        `;
+
+        return;
+    }
+
+
+    data.forEach(function(row) {
+
+
+        try {
+
+
+            const booking =
+                JSON.parse(row.content);
+
+
+            const item =
+                document.createElement('div');
+
+
+            item.className =
+                'booking-item';
+
+
+            item.innerHTML = `
+
+                <h3>
+                    ${escapeHtml(booking.name || '未提供姓名')}
+                </h3>
+
+                <div class="booking-info">
+
+                    📅 預約日期：
+                    ${escapeHtml(booking.date || '')}
+
+                    <br>
+
+                    ⏰ 預約時間：
+                    ${escapeHtml(booking.time || '')}
+
+                    <br>
+
+                    📞 電話：
+                    ${escapeHtml(booking.phone || '')}
+
+                    <br>
+
+                    👥 人數：
+                    ${escapeHtml(String(booking.people || ''))}
+
+                    <br>
+
+                    📝 備註：
+                    ${escapeHtml(booking.note || '無')}
+
+                    <br>
+
+                    <div class="booking-status">
+
+    狀態：
+
+    <select
+        onchange="updateBookingStatus(${row.id}, this.value)">
+
+        <option
+            value="待確認"
+            ${booking.status === '待確認' ? 'selected' : ''}>
+            待確認
+        </option>
+
+        <option
+            value="已確認"
+            ${booking.status === '已確認' ? 'selected' : ''}>
+            已確認
+        </option>
+
+        <option
+            value="已取消"
+            ${booking.status === '已取消' ? 'selected' : ''}>
+            已取消
+        </option>
+
+        <option
+            value="已完成"
+            ${booking.status === '已完成' ? 'selected' : ''}>
+            已完成
+        </option>
+
+    </select>
+
+</div>
+                </div>
+
+
+                <button
+                    class="delete-button"
+                    onclick="deleteBooking(${row.id})">
+
+                    刪除預約
+
+                </button>
+
+            `;
+
+
+            bookingList.appendChild(item);
+
+
+        } catch (error) {
+
+            console.error(
+                '預約資料格式錯誤：',
+                error
+            );
+
+        }
+
+    });
+
+}
+
+
+
+function escapeHtml(text) {
+
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+}
+
+
+async function updateBookingStatus(id, status) {
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from('site_content')
+        .select('content')
+        .eq('id', id)
+        .eq('key', 'booking')
+        .single();
+
+
+    if (error) {
+
+        alert(
+            '讀取預約資料失敗：' +
+            error.message
+        );
+
+        loadBookings();
+
+        return;
+    }
+
+
+    let booking;
+
+    try {
+
+        booking =
+            JSON.parse(data.content);
+
+    } catch (error) {
+
+        alert('預約資料格式錯誤。');
+
+        loadBookings();
+
+        return;
+    }
+
+
+    booking.status = status;
+
+
+    const {
+        error: updateError
+    } = await supabaseClient
+        .from('site_content')
+        .update({
+            content:
+                JSON.stringify(booking)
+        })
+        .eq('id', id)
+        .eq('key', 'booking');
+
+
+    if (updateError) {
+
+        alert(
+            '更新狀態失敗：' +
+            updateError.message
+        );
+
+        loadBookings();
+
+        return;
+    }
+
+
+    alert('預約狀態已更新！');
+
+}
+async function deleteBooking(id) {
+
+
+    const confirmDelete =
+        confirm('確定要刪除這筆預約嗎？');
+
+
+    if (!confirmDelete) {
+        return;
+    }
+
+
+    const {
+        error
+    } = await supabaseClient
+        .from('site_content')
+        .delete()
+        .eq('id', id)
+        .eq('key', 'booking');
+
+
+    if (error) {
+
+        alert(
+            '刪除失敗：' +
+            error.message
+        );
+
+        return;
+    }
+
+
+    alert('預約已刪除。');
+
+
+    loadBookings();
+
+}
+
+
+loadBookings();
+
+
+</script>
+
+
+</body>
+
+</html>

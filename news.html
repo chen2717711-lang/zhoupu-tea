@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>最新消息管理｜拙璞山茶</title>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            background: #f5f3ee;
+            font-family:
+                Arial,
+                "Microsoft JhengHei",
+                sans-serif;
+            color: #333;
+        }
+
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+
+
+        h1 {
+            margin-bottom: 30px;
+        }
+
+
+        .card {
+            background: white;
+            padding: 30px;
+            margin-bottom: 25px;
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+
+
+        label {
+            display: block;
+            margin-top: 18px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            font-family: inherit;
+        }
+
+
+        textarea {
+            min-height: 180px;
+            resize: vertical;
+        }
+
+
+        input[type="file"] {
+            padding: 8px;
+        }
+
+
+        button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            background: #6b7d52;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+
+        .delete-button {
+            background: #a44;
+        }
+
+
+        .edit-button {
+            background: #8a7654;
+        }
+
+
+        .back-button {
+            background: #777;
+            margin-bottom: 20px;
+        }
+
+
+        #preview {
+            margin-top: 15px;
+            max-width: 300px;
+            max-height: 200px;
+            display: none;
+            border-radius: 8px;
+        }
+
+
+        #message {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+
+        .news-item {
+            border-top: 1px solid #ddd;
+            padding: 25px 0;
+        }
+
+
+        .news-item:first-child {
+            border-top: none;
+        }
+
+
+        .news-date {
+            color: #9a8060;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+
+        .news-item h3 {
+            color: #46533d;
+            margin: 5px 0 15px;
+        }
+
+
+        .news-item p {
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+
+
+        .news-item img {
+            width: 100%;
+            max-width: 500px;
+            max-height: 300px;
+            object-fit: cover;
+            display: block;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <button
+        class="back-button"
+        onclick="location.href='dashboard.html'">
+        ← 回到後台
+    </button>
+
+
+    <h1>📰 最新消息管理</h1>
+
+
+    <!-- 新增 / 編輯 -->
+
+    <div class="card">
+
+
+        <h2 id="formTitle">
+            新增最新消息
+        </h2>
+
+
+        <!-- 日期 -->
+
+        <label>
+            消息日期
+        </label>
+
+        <input
+            type="date"
+            id="newsDate">
+
+
+        <!-- 標題 -->
+
+        <label>
+            消息標題
+        </label>
+
+        <input
+            type="text"
+            id="newsTitle"
+            placeholder="例如：2026 春茶上市">
+
+
+        <!-- 內容 -->
+
+        <label>
+            消息內容
+        </label>
+
+        <textarea
+            id="newsContent"
+            placeholder="請輸入最新消息內容"></textarea>
+
+
+        <!-- 圖片 -->
+
+        <label>
+            消息圖片
+        </label>
+
+        <input
+            type="file"
+            id="newsImage"
+            accept="image/*">
+
+
+        <img
+            id="preview"
+            alt="圖片預覽">
+
+
+        <div class="button-group">
+
+            <button
+                onclick="saveNews()">
+                💾 儲存最新消息
+            </button>
+
+
+            <button
+                id="cancelButton"
+                onclick="cancelEdit()"
+                style="display:none; background:#777;">
+                取消編輯
+            </button>
+
+        </div>
+
+
+        <div id="message"></div>
+
+
+    </div>
+
+
+    <!-- 已發布消息 -->
+
+    <div class="card">
+
+
+        <h2>
+            📋 已發布的最新消息
+        </h2>
+
+
+        <div id="newsList">
+
+            正在載入...
+
+        </div>
+
+
+    </div>
+
+
+</div>
+
+
+<!-- Supabase -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+<script>
+
+
+    const SUPABASE_URL =
+        'https://tbakknfdijlwzggqrrzc.supabase.co';
+
+
+    const SUPABASE_KEY =
+        'sb_publishable_C4MU15NKj3NsB24466kMYQ_G9OQT93-';
+
+
+    const supabaseClient =
+        window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_KEY
+        );
+
+
+    // 目前正在編輯的消息 ID
+
+    let editingId = null;
+
+
+    // 預覽圖片
+
+    document
+        .getElementById('newsImage')
+        .addEventListener(
+            'change',
+            function () {
+
+                const file =
+                    this.files[0];
+
+                if (!file) return;
+
+
+                const image =
+                    document.getElementById(
+                        'preview'
+                    );
+
+
+                image.src =
+                    URL.createObjectURL(file);
+
+
+                image.style.display =
+                    'block';
+
+            }
+        );
+
+
+    // 儲存消息
+
+    async function saveNews() {
+
+
+        const date =
+            document.getElementById(
+                'newsDate'
+            ).value;
+
+
+        const title =
+            document.getElementById(
+                'newsTitle'
+            ).value.trim();
+
+
+        const content =
+            document.getElementById(
+                'newsContent'
+            ).value.trim();
+
+
+        const imageFile =
+            document.getElementById(
+                'newsImage'
+            ).files[0];
+
+
+        const message =
+            document.getElementById(
+                'message'
+            );
+
+
+        if (!date) {
+
+            message.textContent =
+                '⚠️ 請選擇消息日期';
+
+            return;
+
+        }
+
+
+        if (!title) {
+
+            message.textContent =
+                '⚠️ 請輸入消息標題';
+
+            return;
+
+        }
+
+
+        if (!content) {
+
+            message.textContent =
+                '⚠️ 請輸入消息內容';
+
+            return;
+
+        }
+
+
+        message.textContent =
+            '⏳ 正在儲存...';
+
+
+        let imageUrl = '';
+
+
+        // 如果正在編輯，而且沒有重新選圖片
+        // 就保留原本圖片
+
+        if (editingId) {
+
+            const { data: oldData } =
+                await supabaseClient
+                    .from('site_content')
+                    .select('content')
+                    .eq('id', editingId)
+                    .single();
+
+
+            if (oldData) {
+
+                try {
+
+                    const oldNews =
+                        JSON.parse(
+                            oldData.content
+                        );
+
+                    imageUrl =
+                        oldNews.image || '';
+
+                } catch (error) {
+
+                    console.error(
+                        '讀取舊圖片失敗：',
+                        error
+                    );
+
+                }
+
+            }
+
+        }
+
+
+        // 有選新圖片
+
+        if (imageFile) {
+
+
+            const fileName =
+                Date.now() +
+                '_' +
+                imageFile.name;
+
+
+            const filePath =
+                'news/' +
+                fileName;
+
+
+            const { error: uploadError } =
+                await supabaseClient.storage
+                    .from('site-images')
+                    .upload(
+                        filePath,
+                        imageFile
+                    );
+
+
+            if (uploadError) {
+
+                console.error(
+                    '圖片上傳失敗：',
+                    uploadError
+                );
+
+                message.textContent =
+                    '❌ 圖片上傳失敗';
+
+                return;
+
+            }
+
+
+            imageUrl =
+                SUPABASE_URL +
+                '/storage/v1/object/public/site-images/' +
+                filePath;
+
+        }
+
+
+        const newsData = {
+
+            title: title,
+
+            content: content,
+
+            image: imageUrl,
+
+            date: date
+
+        };
+
+
+        // 編輯現有消息
+
+        if (editingId) {
+
+
+            const { error } =
+                await supabaseClient
+                    .from('site_content')
+                    .update({
+
+                        content:
+                            JSON.stringify(
+                                newsData
+                            )
+
+                    })
+                    .eq('id', editingId);
+
+
+            if (error) {
+
+                console.error(
+                    '更新消息失敗：',
+                    error
+                );
+
+                message.textContent =
+                    '❌ 更新消息失敗';
+
+                return;
+
+            }
+
+
+            message.textContent =
+                '✅ 最新消息已更新！';
+
+
+        } else {
+
+
+            // 新增消息
+
+            const { error } =
+                await supabaseClient
+                    .from('site_content')
+                    .insert({
+
+                        key: 'news',
+
+                        content:
+                            JSON.stringify(
+                                newsData
+                            )
+
+                    });
+
+
+            if (error) {
+
+                console.error(
+                    '新增消息失敗：',
+                    error
+                );
+
+                message.textContent =
+                    '❌ 最新消息儲存失敗';
+
+                return;
+
+            }
+
+
+            message.textContent =
+                '✅ 最新消息已成功新增！';
+
+        }
+
+
+        clearForm();
+
+        await loadNews();
+
+    }
+
+
+    // 讀取所有消息
+
+    async function loadNews() {
+
+
+        const { data, error } =
+            await supabaseClient
+                .from('site_content')
+                .select('id, content')
+                .eq('key', 'news')
+                .order('id', {
+                    ascending: false
+                });
+
+
+        if (error) {
+
+            console.error(
+                '讀取最新消息失敗：',
+                error
+            );
+
+            document.getElementById(
+                'newsList'
+            ).textContent =
+                '❌ 讀取最新消息失敗';
+
+            return;
+
+        }
+
+
+        const newsList =
+            document.getElementById(
+                'newsList'
+            );
+
+
+        newsList.innerHTML = '';
+
+
+        if (!data || data.length === 0) {
+
+            newsList.innerHTML =
+                '<p>目前沒有發布任何消息。</p>';
+
+            return;
+
+        }
+
+
+        data.forEach(function(row) {
+
+
+            try {
+
+
+                const news =
+                    JSON.parse(
+                        row.content
+                    );
+
+
+                const item =
+                    document.createElement(
+                        'div'
+                    );
+
+
+                item.className =
+                    'news-item';
+
+
+                item.innerHTML = `
+
+                    <div class="news-date">
+                        ${formatDate(news.date)}
+                    </div>
+
+                    <h3>
+                        ${escapeHtml(news.title || '')}
+                    </h3>
+
+                    ${
+                        news.image
+                        ? `
+                            <img
+                                src="${news.image}"
+                                alt="">
+                          `
+                        : ''
+                    }
+
+                    <p>
+                        ${escapeHtml(news.content || '')}
+                    </p>
+
+                    <div class="button-group">
+
+                        <button
+                            class="edit-button"
+                            onclick="editNews(${row.id})">
+                            ✏️ 編輯
+                        </button>
+
+                        <button
+                            class="delete-button"
+                            onclick="deleteNews(${row.id})">
+                            🗑️ 刪除
+                        </button>
+
+                    </div>
+
+                `;
+
+
+                newsList.appendChild(item);
+
+
+            } catch (error) {
+
+
+                console.error(
+                    '消息資料格式錯誤：',
+                    error
+                );
+
+
+            }
+
+        });
+
+    }
+
+
+    // 編輯消息
+
+    async function editNews(id) {
+
+
+        const { data, error } =
+            await supabaseClient
+                .from('site_content')
+                .select('content')
+                .eq('id', id)
+                .single();
+
+
+        if (error) {
+
+            console.error(
+                '讀取消息失敗：',
+                error
+            );
+
+            return;
+
+        }
+
+
+        const news =
+            JSON.parse(data.content);
+
+
+        editingId = id;
+
+
+        document.getElementById(
+            'formTitle'
+        ).textContent =
+            '✏️ 編輯最新消息';
+
+
+        document.getElementById(
+            'newsDate'
+        ).value =
+            news.date || '';
+
+
+        document.getElementById(
+            'newsTitle'
+        ).value =
+            news.title || '';
+
+
+        document.getElementById(
+            'newsContent'
+        ).value =
+            news.content || '';
+
+
+        const preview =
+            document.getElementById(
+                'preview'
+            );
+
+
+        if (news.image) {
+
+            preview.src =
+                news.image;
+
+            preview.style.display =
+                'block';
+
+        } else {
+
+            preview.style.display =
+                'none';
+
+        }
+
+
+        document.getElementById(
+            'cancelButton'
+        ).style.display =
+            'inline-block';
+
+
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+
+    }
+
+
+    // 刪除消息
+
+    async function deleteNews(id) {
+
+
+        const ok =
+            confirm(
+                '確定要刪除這則最新消息嗎？'
+            );
+
+
+        if (!ok) return;
+
+
+        const { error } =
+            await supabaseClient
+                .from('site_content')
+                .delete()
+                .eq('id', id);
+
+
+        if (error) {
+
+            console.error(
+                '刪除消息失敗：',
+                error
+            );
+
+            alert(
+                '❌ 刪除失敗'
+            );
+
+            return;
+
+        }
+
+
+        alert(
+            '✅ 最新消息已刪除'
+        );
+
+
+        loadNews();
+
+    }
+
+
+    // 取消編輯
+
+    function cancelEdit() {
+
+        clearForm();
+
+    }
+
+
+    // 清空表單
+
+    function clearForm() {
+
+
+        editingId = null;
+
+
+        document.getElementById(
+            'formTitle'
+        ).textContent =
+            '新增最新消息';
+
+
+        document.getElementById(
+            'newsDate'
+        ).value = '';
+
+
+        document.getElementById(
+            'newsTitle'
+        ).value = '';
+
+
+        document.getElementById(
+            'newsContent'
+        ).value = '';
+
+
+        document.getElementById(
+            'newsImage'
+        ).value = '';
+
+
+        document.getElementById(
+            'preview'
+        ).style.display =
+            'none';
+
+
+        document.getElementById(
+            'cancelButton'
+        ).style.display =
+            'none';
+
+    }
+
+
+    // 日期格式
+
+    function formatDate(date) {
+
+        if (!date) {
+            return '最新消息';
+        }
+
+
+        const parts =
+            date.split('-');
+
+
+        if (parts.length === 3) {
+
+            return (
+                parts[0] +
+                '.' +
+                parts[1] +
+                '.' +
+                parts[2]
+            );
+
+        }
+
+
+        return date;
+
+    }
+
+
+    // 避免特殊文字影響網頁
+
+    function escapeHtml(text) {
+
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+
+    }
+
+
+    // 載入消息
+
+    loadNews();
+
+
+</script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>拙璞山茶｜網站後台</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, "Noto Sans TC", sans-serif;
+            background: #f5f3ee;
+            color: #333;
+        }
+
+        .login-box {
+            width: 90%;
+            max-width: 420px;
+            margin: 100px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #777;
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-top: 18px;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 25px;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #5d7658;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #4d6549;
+        }
+
+        #message {
+            margin-top: 20px;
+            text-align: center;
+            color: #c0392b;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="login-box">
+
+    <h1>拙璞山茶</h1>
+
+    <div class="subtitle">
+        網站管理後台
+    </div>
+
+    <label>電子信箱</label>
+    <input
+        type="email"
+        id="email"
+        placeholder="請輸入管理員 Email"
+    >
+
+    <label>密碼</label>
+    <input
+        type="password"
+        id="password"
+        placeholder="請輸入密碼"
+    >
+
+    <button onclick="login()">
+        登入後台
+    </button>
+
+    <div id="message"></div>
+
+</div>
+
+<script>
+
+const SUPABASE_URL = 'https://tbakknfdijlwzggqrrzc.supabase.co';
+
+const SUPABASE_KEY = 'sb_publishable_C4MU15NKj3NsB24466kMYQ_G9OQT93-';
+
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+
+async function login() {
+
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    const message = document.getElementById('message');
+
+    if (!email || !password) {
+        message.textContent = '請輸入 Email 和密碼';
+        return;
+    }
+
+    message.textContent = '登入中...';
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+    });
+
+    if (error) {
+        console.error(error);
+
+        message.textContent = '登入失敗：' + error.message;
+        return;
+    }
+
+    console.log('登入成功：', data);
+
+    message.style.color = '#2e7d32';
+    message.textContent = '登入成功！';
+
+    setTimeout(() => {
+        window.location.href = 'dashboard.html';
+    }, 800);
+}
+
+</script>
+
+</body>
+</html>

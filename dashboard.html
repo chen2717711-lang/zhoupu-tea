@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>拙璞山茶｜管理後台</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, "Noto Sans TC", sans-serif;
+            background: #f5f3ee;
+            color: #333;
+        }
+
+        header {
+            background: #5d7658;
+            color: white;
+            padding: 20px;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 1100px;
+            margin: 30px auto;
+        }
+
+        .welcome {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .menu {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        }
+
+        .card h2 {
+            margin-top: 0;
+        }
+
+        .card p {
+            color: #777;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .logout {
+            background: white;
+            color: #5d7658;
+            float: right;
+        }
+
+        .open-button {
+            background: #5d7658;
+            color: white;
+        }
+
+        @media (max-width: 600px) {
+
+            .menu {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<header>
+
+    <button class="logout" onclick="logout()">
+        登出
+    </button>
+
+    <h1>拙璞山茶</h1>
+
+    <div>
+        網站管理後台
+    </div>
+
+</header>
+
+
+<div class="container">
+
+    <div class="welcome">
+
+        <h2>歡迎使用網站管理後台</h2>
+
+        <p id="userEmail">
+            正在取得登入資訊...
+        </p>
+
+    </div>
+
+
+    <div class="menu">
+
+
+        <div class="card">
+
+            <h2>🏠 首頁內容</h2>
+
+            <p>
+                修改網站首頁的文字與介紹。
+            </p>
+
+            <button class="open-button" onclick="location.href='content.html'">
+
+                開始管理
+            </button>
+
+        </div>
+
+
+        <div class="card">
+
+            <h2>🍵 茶葉產品</h2>
+
+            <p>
+                新增、修改或刪除茶葉產品。
+            </p>
+
+           <button
+    class="open-button"
+    onclick="location.href='tea.html'">
+
+    開始管理
+
+</button>
+
+        </div>
+
+
+        <div class="card">
+
+    <h2>📰 最新消息</h2>
+
+    <p>
+        發布網站最新消息。
+    </p>
+
+    <button
+        class="open-button"
+        onclick="location.href='news.html'">
+        開始管理
+    </button>
+
+</div>
+
+
+        <div class="card">
+
+    <h2>🖼️ 作品展示</h2>
+
+    <p>
+        上傳與管理網站上的照片。
+    </p>
+
+    <button
+        class="open-button"
+        onclick="location.href='gallery.html'">
+        開始管理
+    </button>
+
+</div>
+
+
+<div class="card">
+
+    <h2>📅 線上預約</h2>
+
+    <p>
+        查看客人的預約資料。
+    </p>
+
+    <button
+        class="open-button"
+        onclick="location.href='booking.html'">
+        開始管理
+    </button>
+    
+    </div>
+
+    <div class="card">
+    <h2>📞 聯絡我們</h2>
+
+    <p>
+        管理網站上的地址、電話、Email、聯絡時間及 QR Code。
+    </p>
+
+    <button
+        class="open-button"
+        onclick="location.href='contact.html'">
+        開始管理
+    </button>
+</div>
+
+</div>
+
+
+        <div class="card">
+
+            <h2>🌐 查看網站</h2>
+
+            <p>
+                開啟目前的網站首頁。
+            </p>
+
+            <button
+                class="open-button"
+                onclick="window.location.href='index.html'">
+
+                查看網站
+
+            </button>
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+<script>
+
+const SUPABASE_URL =
+    'https://tbakknfdijlwzggqrrzc.supabase.co';
+
+const SUPABASE_KEY =
+    'sb_publishable_C4MU15NKj3NsB24466kMYQ_G9OQT93-';
+
+
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+
+async function checkLogin() {
+
+    const {
+        data,
+        error
+    } = await supabaseClient.auth.getSession();
+
+
+    if (error || !data.session) {
+
+        window.location.href = 'admin.html';
+
+        return;
+
+    }
+
+
+    document.getElementById('userEmail').textContent =
+        '目前登入帳號：' + data.session.user.email;
+
+}
+
+
+
+async function logout() {
+
+    await supabaseClient.auth.signOut();
+
+    window.location.href = 'admin.html';
+
+}
+
+
+checkLogin();
+
+</script>
+
+</body>
+
+</html>
