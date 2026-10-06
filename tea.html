@@ -286,31 +286,44 @@ function createProductBox(product = {}, index = 0) {
 
         <label>茶葉價格</label>
 
-        <input
-            type="text"
-            class="tea-price"
-            placeholder="例如：600 元"
-            value="${escapeHtml(product.price || '')}">
+<input
+    type="text"
+    class="tea-price"
+    placeholder="例如：600 元"
+    value="${escapeHtml(product.price || '')}">
 
 
-        <label>茶葉介紹</label>
+<label>茶葉介紹</label>
 
-        <textarea
-            class="tea-description"
-            placeholder="輸入茶葉產品介紹...">${escapeHtml(product.description || '')}</textarea>
-
-
-        <label>茶葉圖片</label>
-
-        <input
-            type="file"
-            class="tea-image"
-            accept="image/*">
+<textarea
+    class="tea-description"
+    placeholder="輸入茶葉產品介紹...">${escapeHtml(product.description || '')}</textarea>
 
 
-        <div class="hint">
-            可以上傳茶葉產品照片。
-        </div>
+<label>蝦皮購買網址</label>
+
+<input
+    type="url"
+    class="tea-shopee"
+    placeholder="例如：https://shopee.tw/你的商品網址"
+    value="${escapeHtml(product.shopee || '')}">
+
+<div class="hint">
+    填入蝦皮商品網址，首頁會顯示購買按鈕。
+</div>
+
+
+<label>茶葉圖片</label>
+
+<input
+    type="file"
+    class="tea-image"
+    accept="image/*">
+
+
+<div class="hint">
+    可以上傳茶葉產品照片。
+</div>
 
 
         <img
@@ -597,6 +610,9 @@ async function saveProduct(button) {
     const teaDescription =
         box.querySelector('.tea-description').value;
 
+        const teaShopee =
+    box.querySelector('.tea-shopee').value.trim();
+
 
     let teaImageUrl =
         box.dataset.image || '';
@@ -683,17 +699,19 @@ async function saveProduct(button) {
 
 
     const productData =
-        JSON.stringify({
+    JSON.stringify({
 
-            name: teaName,
+        name: teaName,
 
-            price: teaPrice,
+        price: teaPrice,
 
-            description: teaDescription,
+        description: teaDescription,
 
-            image: teaImageUrl
+        image: teaImageUrl,
 
-        });
+        shopee: teaShopee
+
+    });
 
 
     let saveError;

@@ -31,6 +31,7 @@
 
     }
 
+
     .container {
 
         max-width: 900px;
@@ -40,6 +41,7 @@
         padding: 50px 20px;
 
     }
+
 
     .back {
 
@@ -55,6 +57,7 @@
 
     }
 
+
     .news-detail {
 
         background: white;
@@ -68,6 +71,7 @@
 
     }
 
+
     .news-date {
 
         color: #888;
@@ -77,6 +81,7 @@
         margin-bottom: 12px;
 
     }
+
 
     h1 {
 
@@ -90,11 +95,30 @@
 
     }
 
+
+    /* ===== 多張消息照片 ===== */
+
+    .news-image-grid {
+
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, 1fr);
+
+        gap: 20px;
+
+        width: 100%;
+
+        margin: 25px 0;
+
+    }
+
+
     .news-image {
 
         width: 100%;
 
-        max-height: 550px;
+        height: 280px;
 
         object-fit: cover;
 
@@ -102,9 +126,8 @@
 
         display: block;
 
-        margin: 25px 0;
-
     }
+
 
     .news-content {
 
@@ -116,6 +139,7 @@
 
     }
 
+
     .loading {
 
         text-align: center;
@@ -123,6 +147,9 @@
         color: #777;
 
     }
+
+
+    /* ===== 手機版 ===== */
 
     @media (max-width: 768px) {
 
@@ -132,11 +159,13 @@
 
         }
 
+
         .news-detail {
 
             padding: 25px 20px;
 
         }
+
 
         h1 {
 
@@ -144,16 +173,33 @@
 
         }
 
+
         .news-content {
 
             font-size: 16px;
 
         }
 
+
+        .news-image-grid {
+
+            grid-template-columns:
+                repeat(2, 1fr);
+
+            gap: 12px;
+
+        }
+
+
+        .news-image {
+
+            height: 160px;
+
+        }
+
     }
 
 </style>
-```
 
 </head>
 
@@ -161,20 +207,21 @@
 
 <div class="container">
 
-```
-<a
-    href="index.html#news"
-    class="back">
-    ← 返回最新消息
-</a>
+    <a
+        href="index.html#news"
+        class="back">
+        ← 返回最新消息
+    </a>
 
 
-<div
-    class="news-detail"
-    id="newsDetail">
+    <div
+        class="news-detail"
+        id="newsDetail">
 
-    <div class="loading">
-        正在載入最新消息...
+        <div class="loading">
+            正在載入最新消息...
+        </div>
+
     </div>
 
 </div>
@@ -376,16 +423,25 @@
 
 
                 ${
-                    news.image
-                    ? `
-
-                        <img
-                            class="news-image"
-                            src="${news.image}"
-                            alt="">
-
-                      `
-                    : ''
+                   Array.isArray(news.images) && news.images.length > 0
+    ? news.images.map(image => `
+        
+        <img
+            class="news-image"
+            src="${image}"
+            alt="">
+            
+      `).join('')
+    : news.image
+        ? `
+            
+            <img
+                class="news-image"
+                src="${news.image}"
+                alt="">
+                
+          `
+        : ''
                 }
 
 

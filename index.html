@@ -461,30 +461,153 @@ html
             font-size: 18px;
             margin-top: 12px;
         }
+/* 蝦皮購買按鈕 */
 
+.shopee-button {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 10px 18px;
+    border: 1px solid #46533d;
+    border-radius: 25px;
+    background: #46533d;
+    color: white;
+    text-decoration: none;
+    font-size: 14px;
+    line-height: 1.4;
+    transition: 0.3s;
+}
+
+.shopee-button:hover {
+    background: transparent;
+    color: #46533d;
+}
         /* ===== 最新消息 ===== */
 
-        .news-list {
-            max-width: 850px;
-            margin: auto;
-        }
+.news-list {
+    max-width: 950px;
+    margin: 0 auto;
+}
 
-        .news-item {
-            background: white;
-            padding: 25px;
-            margin-bottom: 15px;
-            border-left: 4px solid #9a8060;
-        }
+.news-item {
+    display: flex;
+    align-items: center;
+    gap: 35px;
 
-        .news-date {
-            color: #9a8060;
-            font-size: 14px;
-        }
+    background: white;
+    padding: 25px;
 
-        .news-item h3 {
-            color: #46533d;
-            margin: 5px 0;
-        }
+    margin-bottom: 25px;
+
+    border-radius: 12px;
+
+    box-shadow:
+        0 5px 20px rgba(0, 0, 0, 0.05);
+
+    cursor: pointer;
+
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+}
+
+.news-item:hover {
+    transform: translateY(-3px);
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+
+/* 左邊圖片 */
+
+.news-image {
+    width: 280px;
+    height: 180px;
+
+    flex-shrink: 0;
+
+    object-fit: cover;
+
+    border-radius: 8px;
+}
+
+
+/* 右邊文字 */
+
+.news-content {
+    flex: 1;
+}
+
+
+/* 日期 */
+
+.news-date {
+    color: #9a8060;
+
+    font-size: 14px;
+
+    letter-spacing: 1px;
+
+    margin-bottom: 10px;
+}
+
+
+/* 標題 */
+
+.news-item h3 {
+    color: #46533d;
+
+    font-size: 24px;
+
+    margin: 0 0 12px;
+
+    line-height: 1.5;
+}
+
+
+/* 內容摘要 */
+
+.news-item p {
+    color: #666;
+
+    font-size: 16px;
+
+    line-height: 1.8;
+
+    margin: 0;
+
+    display: block;
+
+    overflow: hidden;
+
+    max-height: 58px;
+}
+
+/* 手機版 */
+
+@media (max-width: 700px) {
+
+    .news-item {
+        display: block;
+        padding: 18px;
+        margin-bottom: 20px;
+    }
+
+    .news-image {
+        width: 100%;
+        height: 200px;
+        margin-bottom: 18px;
+    }
+
+    .news-item h3 {
+        font-size: 21px;
+    }
+
+    .news-item p {
+        font-size: 15px;
+    }
+
+}
 
         /* ===== 圖片展示 ===== */
 
@@ -1347,11 +1470,12 @@ html
     }
 
 
-    /* 預約 */
+   /* 預約 */
 
-   async function submitReservation(event) {
+async function submitReservation(event) {
 
     event.preventDefault();
+
 
     const name =
         document.getElementById('name').value.trim();
@@ -1391,7 +1515,11 @@ html
     };
 
 
-    const { error } =
+    /* =========================
+       第一步：儲存預約
+       ========================= */
+
+    const { data: bookingResult, error } =
         await supabaseClient
             .from('site_content')
             .insert({
@@ -1401,7 +1529,9 @@ html
                 content:
                     JSON.stringify(bookingData)
 
-            });
+            })
+            .select('id')
+            .single();
 
 
     if (error) {
@@ -1420,6 +1550,124 @@ html
 
     }
 
+
+    /* =========================
+       第二步：取得通知 Email
+       ========================= */
+
+    const {
+        data: emailSetting,
+        error: emailError
+    } =
+        await supabaseClient
+            .from('site_content')
+            .select('content')
+            .eq('key', 'booking_email')
+            .maybeSingle();
+
+
+    if (emailError) {
+
+        console.error(
+            '讀取通知 Email 失敗：',
+            emailError
+        );
+
+    }
+
+
+    const notificationEmail =
+        emailSetting?.content?.trim();
+
+
+    /* =========================
+       第三步：寄送 Email 通知
+       ========================= */
+
+    if (notificationEmail) {
+
+        try {
+
+            const {
+                data: emailResult,
+                error: functionError
+            } =
+                await supabaseClient.functions
+                    .invoke(
+                        'resend-email',
+                        {
+                            body: {
+
+                                name: name,
+
+                                phone: phone,
+
+                                date: date,
+
+                                time: time,
+
+                                people: people,
+
+                                note: note,
+
+                                to:
+                                    notificationEmail
+
+                            }
+
+                        }
+                    );
+
+
+            if (functionError) {
+
+                console.error(
+                    'Email 通知失敗：',
+                    functionError
+                );
+
+                alert(
+                    '預約已收到，但 Email 通知寄送失敗。\n\n' +
+                    '請稍後到後台確認通知設定。'
+                );
+
+                return;
+
+            }
+
+
+            console.log(
+                'Email 通知成功：',
+                emailResult
+            );
+
+        } catch (emailError) {
+
+            console.error(
+                'Email 通知發生錯誤：',
+                emailError
+            );
+
+            alert(
+                '預約已收到，但 Email 通知寄送失敗。'
+            );
+
+            return;
+
+        }
+
+    } else {
+
+        console.warn(
+            '尚未設定 booking_email'
+        );
+
+    }
+
+
+    /* =========================
+       完成
+       ========================= */
 
     alert(
         '預約已成功送出！\n\n' +
@@ -1739,17 +1987,21 @@ function renderNews() {
 
             <div class="news-item">
 
-                <div class="news-date">
-                    最新消息
+                <div class="news-content">
+
+                    <div class="news-date">
+                        最新消息
+                    </div>
+
+                    <h3>
+                        目前沒有最新消息
+                    </h3>
+
+                    <p>
+                        請到後台新增消息。
+                    </p>
+
                 </div>
-
-                <h3>
-                    目前沒有最新消息
-                </h3>
-
-                <p>
-                    請到後台新增消息。
-                </p>
 
             </div>
 
@@ -1841,10 +2093,6 @@ function renderNews() {
 
         // 整個消息可以點擊
 
-        item.style.cursor =
-            'pointer';
-
-
         item.onclick =
             function() {
 
@@ -1857,39 +2105,38 @@ function renderNews() {
 
         item.innerHTML = `
 
-            <div class="news-date">
-                ${escapeHtml(date)}
-            </div>
-
-            <h3>
-                ${escapeHtml(title)}
-            </h3>
-
-            <p>
-                ${escapeHtml(summary)}
-            </p>
-
             ${
                 news.image
 
                 ? `
 
                     <img
+                        class="news-image"
                         src="${escapeHtml(news.image)}"
-                        style="
-                            width:120px;
-                            height:80px;
-                            object-fit:cover;
-                            border-radius:8px;
-                            margin-top:10px;
-                        "
-                        alt="">
+                        alt="${escapeHtml(title)}">
 
                   `
 
                 : ''
 
             }
+
+
+            <div class="news-content">
+
+                <div class="news-date">
+                    ${escapeHtml(date)}
+                </div>
+
+                <h3>
+                    ${escapeHtml(title)}
+                </h3>
+
+                <p>
+                    ${escapeHtml(summary)}
+                </p>
+
+            </div>
 
         `;
 
@@ -1957,7 +2204,6 @@ function toggleAllNews() {
 // ==========================
 // 執行最新消息讀取
 // ==========================
-
 loadNews();
     // ==========================
 // 讀取作品展示照片
@@ -2477,6 +2723,16 @@ async function loadTeaProduct() {
                         ${product.price ? 'NT$ ' + escapeHtml(product.price) : ''}
                     </div>
 
+                    ${product.shopee ? `
+                        <a
+                            href="${escapeHtml(product.shopee)}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="shopee-button">
+                            前往蝦皮購買 →
+                        </a>
+                    ` : ''}
+
                 </div>
 
             `;
@@ -2497,7 +2753,6 @@ async function loadTeaProduct() {
     });
 
 }
-
 
 /* 避免特殊文字影響網頁 */
 
