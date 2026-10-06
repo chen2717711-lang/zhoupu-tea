@@ -247,14 +247,21 @@
         </label>
 
         <input
-            type="file"
-            id="newsImage"
-            accept="image/*">
+    type="file"
+    id="newsImage"
+    accept="image/*"
+    multiple>
 
 
-        <img
-            id="preview"
-            alt="圖片預覽">
+        <div
+    id="preview"
+    style="
+        display: none;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
+    ">
+</div>
 
 
         <div class="button-group">
@@ -330,37 +337,94 @@
     // 目前正在編輯的消息 ID
 
     let editingId = null;
+    let editingImages = [];
 
 
     // 預覽圖片
 
     document
-        .getElementById('newsImage')
-        .addEventListener(
-            'change',
-            function () {
+    .getElementById('newsImage')
+    .addEventListener(
+        'change',
+        function () {
 
-                const file =
-                    this.files[0];
+            const files = this.files;
 
-                if (!file) return;
+            const preview =
+                document.getElementById(
+                    'preview'
+                );
+
+            preview.innerHTML = '';
+
+            if (
+                !files ||
+                files.length === 0
+            ) {
+                preview.style.display =
+                    'none';
+
+                return;
+            }
+
+            preview.style.display =
+                'flex';
+
+            preview.style.flexWrap =
+                'wrap';
+
+            preview.style.gap =
+                '10px';
 
 
-                const image =
-                    document.getElementById(
-                        'preview'
-                    );
+            for (
+                let i = 0;
+                i < files.length;
+                i++
+            ) {
+
+                const file = files[i];
+
+                const reader =
+                    new FileReader();
 
 
-                image.src =
-                    URL.createObjectURL(file);
+                reader.onload =
+                    function (e) {
+
+                        const image =
+                            document.createElement(
+                                'img'
+                            );
+
+                        image.src =
+                            e.target.result;
+
+                        image.style.width =
+                            '140px';
+
+                        image.style.height =
+                            '100px';
+
+                        image.style.objectFit =
+                            'cover';
+
+                        image.style.borderRadius =
+                            '8px';
+
+                        preview.appendChild(
+                            image
+                        );
+
+                    };
 
 
-                image.style.display =
-                    'block';
+                reader.readAsDataURL(file);
 
             }
-        );
+
+        }
+    );
 
 
     // 儲存消息
@@ -386,10 +450,10 @@
             ).value.trim();
 
 
-        const imageFile =
-            document.getElementById(
-                'newsImage'
-            ).files[0];
+        const imageFiles =
+    document.getElementById(
+        'newsImage'
+    ).files;
 
 
         const message =
@@ -432,95 +496,98 @@
             '⏳ 正在儲存...';
 
 
-        let imageUrl = '';
+let imageUrls = [];
+
+// ==========================
+// 上傳多張圖片
+// ==========================
+
+if (imageFiles && imageFiles.length > 0) {
+    
+
+    for (
+        let i = 0;
+        i < imageFiles.length;
+        i++
+    ) {
+
+        const imageFile =
+            imageFiles[i];
 
 
-        // 如果正在編輯，而且沒有重新選圖片
-        // 就保留原本圖片
-
-        if (editingId) {
-
-            const { data: oldData } =
-                await supabaseClient
-                    .from('site_content')
-                    .select('content')
-                    .eq('id', editingId)
-                    .single();
+        const fileExt =
+            imageFile.name
+                .split('.')
+                .pop();
 
 
-            if (oldData) {
-
-                try {
-
-                    const oldNews =
-                        JSON.parse(
-                            oldData.content
-                        );
-
-                    imageUrl =
-                        oldNews.image || '';
-
-                } catch (error) {
-
-                    console.error(
-                        '讀取舊圖片失敗：',
-                        error
-                    );
-
-                }
-
-            }
-
-        }
+        const fileName =
+            'news-' +
+            Date.now() +
+            '-' +
+            i +
+            '.' +
+            fileExt;
 
 
-        // 有選新圖片
-
-        if (imageFile) {
-
-
-            const fileName =
-                Date.now() +
-                '_' +
-                imageFile.name;
+        const filePath =
+            'news/' +
+            fileName;
 
 
-            const filePath =
-                'news/' +
-                fileName;
-
-
-            const { error: uploadError } =
-                await supabaseClient.storage
-                    .from('site-images')
-                    .upload(
-                        filePath,
-                        imageFile
-                    );
-
-
-            if (uploadError) {
-
-                console.error(
-                    '圖片上傳失敗：',
-                    uploadError
+        const {
+            error: uploadError
+        } =
+            await supabaseClient
+                .storage
+                .from('site-images')
+                .upload(
+                    filePath,
+                    imageFile
                 );
 
-                message.textContent =
-                    '❌ 圖片上傳失敗';
 
-                return;
+        if (uploadError) {
 
-            }
+            console.error(
+                '圖片上傳失敗：',
+                uploadError
+            );
 
+            message.textContent =
+                '❌ 第 ' +
+                (i + 1) +
+                ' 張圖片上傳失敗';
 
-            imageUrl =
-                SUPABASE_URL +
-                '/storage/v1/object/public/site-images/' +
-                filePath;
+            return;
 
         }
 
+
+        const imageUrl =
+            SUPABASE_URL +
+            '/storage/v1/object/public/site-images/' +
+            filePath;
+
+
+        imageUrls.push(
+            imageUrl
+        );
+
+    }
+
+}
+// 編輯時：保留沒有刪掉的舊圖片
+// 再加上這次新上傳的圖片
+
+if (editingId) {
+
+    imageUrls = [
+        ...editingImages,
+        ...imageUrls
+    ];
+
+}
 
         const newsData = {
 
@@ -528,7 +595,7 @@
 
             content: content,
 
-            image: imageUrl,
+           images: imageUrls,
 
             date: date
 
@@ -703,16 +770,37 @@
                     <h3>
                         ${escapeHtml(news.title || '')}
                     </h3>
-
-                    ${
-                        news.image
-                        ? `
-                            <img
-                                src="${news.image}"
-                                alt="">
-                          `
-                        : ''
-                    }
+${
+    Array.isArray(news.images)
+        ? news.images.map(function(image) {
+            return `
+                <img
+                    src="${escapeHtml(image)}"
+                    alt=""
+                    style="
+                        width: 140px;
+                        height: 100px;
+                        object-fit: cover;
+                        border-radius: 8px;
+                        margin: 5px;
+                    ">
+            `;
+        }).join('')
+        : news.image
+            ? `
+                <img
+                    src="${escapeHtml(news.image)}"
+                    alt=""
+                    style="
+                        width: 140px;
+                        height: 100px;
+                        object-fit: cover;
+                        border-radius: 8px;
+                        margin: 5px;
+                    ">
+              `
+            : ''
+}
 
                     <p>
                         ${escapeHtml(news.content || '')}
@@ -818,20 +906,176 @@
             );
 
 
-        if (news.image) {
+// 顯示原本的多張圖片
 
-            preview.src =
-                news.image;
+preview.innerHTML = '';
 
-            preview.style.display =
-                'block';
 
-        } else {
+let imageList = [];
 
-            preview.style.display =
-                'none';
 
-        }
+if (Array.isArray(news.images)) {
+
+    imageList =
+        [...news.images];
+
+}
+else if (news.image) {
+
+    imageList = [
+        news.image
+    ];
+
+}
+
+
+// 記住目前正在編輯的圖片
+
+editingImages =
+    imageList;
+
+    
+
+if (imageList.length > 0) {
+
+    preview.style.display =
+        'flex';
+
+    preview.style.flexWrap =
+        'wrap';
+
+    preview.style.gap =
+        '10px';
+
+
+    imageList.forEach(
+    function (imageUrl, index) {
+
+        const wrapper =
+            document.createElement(
+                'div'
+            );
+
+
+        wrapper.style.position =
+            'relative';
+
+        wrapper.style.width =
+            '140px';
+
+        wrapper.style.height =
+            '100px';
+
+
+        const image =
+            document.createElement(
+                'img'
+            );
+
+
+        image.src =
+            imageUrl;
+
+
+        image.style.width =
+            '140px';
+
+        image.style.height =
+            '100px';
+
+        image.style.objectFit =
+            'cover';
+
+        image.style.borderRadius =
+            '8px';
+
+
+        const deleteButton =
+            document.createElement(
+                'button'
+            );
+
+
+        deleteButton.textContent =
+            '✕';
+
+
+        deleteButton.type =
+            'button';
+
+
+        deleteButton.style.position =
+            'absolute';
+
+        deleteButton.style.top =
+            '5px';
+
+        deleteButton.style.right =
+            '5px';
+
+        deleteButton.style.width =
+            '28px';
+
+        deleteButton.style.height =
+            '28px';
+
+        deleteButton.style.padding =
+            '0';
+
+        deleteButton.style.borderRadius =
+            '50%';
+
+        deleteButton.style.border =
+            'none';
+
+        deleteButton.style.background =
+            'rgba(0,0,0,0.7)';
+
+        deleteButton.style.color =
+            'white';
+
+        deleteButton.style.cursor =
+            'pointer';
+
+
+        deleteButton.onclick =
+            function () {
+
+                imageList.splice(
+                    index,
+                    1
+                );
+
+
+                wrapper.remove();
+
+            };
+
+
+        wrapper.appendChild(
+            image
+        );
+
+
+        wrapper.appendChild(
+            deleteButton
+        );
+
+
+        preview.appendChild(
+            wrapper
+        );
+
+    }
+);
+
+}
+else {
+
+    preview.style.display =
+        'none';
+
+}
 
 
         document.getElementById(
@@ -910,6 +1154,8 @@
 
 
         editingId = null;
+
+        editingImages = [];
 
 
         document.getElementById(

@@ -1873,45 +1873,50 @@ async function loadNews() {
 
     allNewsItems = [];
 
-    if (data && data.length > 0) {
+   if (data && data.length > 0) {
 
-        data.forEach(function(row) {
+    data.forEach(function(row) {
 
-            try {
+        try {
 
-                const news =
-                    JSON.parse(row.content);
+            const news =
+                JSON.parse(row.content);
 
-                allNewsItems.push({
+            allNewsItems.push({
 
-                    id: row.id,
+                id: row.id,
 
-                    title:
-                        news.title || '',
+                title:
+                    news.title || '',
 
-                    content:
-                        news.content || '',
+                content:
+                    news.content || '',
 
-                    image:
-                        news.image || '',
+                image:
+                    news.image || '',
 
-                    date:
-                        news.date || ''
+                images:
+                    Array.isArray(news.images)
+                        ? news.images
+                        : [],
 
-                });
+                date:
+                    news.date || ''
 
-            } catch (error) {
+            });
 
-                console.error(
-                    '最新消息資料格式錯誤：',
-                    error
-                );
+        } catch (error) {
 
-            }
+            console.error(
+                '最新消息資料格式錯誤：',
+                error
+            );
 
-        });
+        }
 
-    }
+    });
+
+}
 
 
     // ==========================
@@ -2103,23 +2108,31 @@ function renderNews() {
             };
 
 
-        item.innerHTML = `
+       item.innerHTML = `
 
-            ${
-                news.image
+    ${
+        (
+            Array.isArray(news.images)
+                ? news.images[0]
+                : news.image
+        )
 
-                ? `
+        ? `
 
-                    <img
-                        class="news-image"
-                        src="${escapeHtml(news.image)}"
-                        alt="${escapeHtml(title)}">
+            <img
+                class="news-image"
+                src="${escapeHtml(
+                    Array.isArray(news.images)
+                        ? news.images[0]
+                        : news.image
+                )}"
+                alt="${escapeHtml(title)}">
 
-                  `
+          `
 
-                : ''
+        : ''
 
-            }
+    }
 
 
             <div class="news-content">

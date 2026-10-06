@@ -118,15 +118,15 @@
 
         width: 100%;
 
-        height: 280px;
+        height: auto;
 
-        object-fit: cover;
+        object-fit: contain;
 
         border-radius: 10px;
 
         display: block;
 
-    }
+    } 
 
 
     .news-content {
@@ -182,21 +182,25 @@
 
 
         .news-image-grid {
+            display: grid;
 
-            grid-template-columns:
-                repeat(2, 1fr);
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(280px, 1fr)
+        );
 
-            gap: 12px;
+    gap: 12px;
+    align-items: start;
 
-        }
+}
 
 
-        .news-image {
+       .news-image {
 
-            height: 160px;
+    height: auto;
 
-        }
-
+}
     }
 
 </style>
@@ -424,24 +428,27 @@
 
                 ${
                    Array.isArray(news.images) && news.images.length > 0
-    ? news.images.map(image => `
-        
-        <img
-            class="news-image"
-            src="${image}"
-            alt="">
-            
-      `).join('')
-    : news.image
-        ? `
-            
+   ? `
+    <div class="news-image-grid">
+        ${news.images.map(image => `
             <img
                 class="news-image"
-                src="${news.image}"
-                alt="">
-                
-          `
-        : ''
+                src="${image}"
+                alt=""
+                onclick="openImage(this.src)">
+        `).join('')}
+    </div>
+`
+: news.image
+    ? `
+
+        <img
+            class="news-image"
+            src="${news.image}"
+            alt=""
+            onclick="openImage(this.src)">
+      `
+    : ''
                 }
 
 
@@ -480,9 +487,114 @@
     // ==========================
 
     loadNewsDetail();
+function openImage(imageUrl) {
 
+    const lightbox =
+        document.getElementById(
+            'imageLightbox'
+        );
+
+    const lightboxImage =
+        document.getElementById(
+            'lightboxImage'
+        );
+
+    lightboxImage.src = imageUrl;
+
+    lightbox.style.display = 'flex';
+}
+
+
+function closeImage() {
+
+    const lightbox =
+        document.getElementById(
+            'imageLightbox'
+        );
+
+    const lightboxImage =
+        document.getElementById(
+            'lightboxImage'
+        );
+
+    lightbox.style.display = 'none';
+
+    lightboxImage.src = '';
+
+}
 </script>
+<!-- 圖片放大視窗 -->
 
+<div
+    id="imageLightbox"
+    onclick="closeImage()"
+    style="
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        box-sizing: border-box;
+        cursor: pointer;
+    "
+>
+
+    <img
+        id="lightboxImage"
+        src=""
+        alt=""
+        style="
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+            border-radius: 4px;
+            cursor: default;
+        "
+        onclick="event.stopPropagation()">
+
+</div>
+<!-- 圖片放大視窗 -->
+
+<div
+    id="imageLightbox"
+    onclick="closeImage()"
+    style="
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        box-sizing: border-box;
+        cursor: pointer;
+    "
+>
+
+    <img
+        id="lightboxImage"
+        src=""
+        alt=""
+        style="
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+            border-radius: 4px;
+            cursor: default;
+        "
+        onclick="event.stopPropagation()">
+
+</div>
 </body>
 
 </html>
