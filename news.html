@@ -317,6 +317,79 @@
 
 
 <script>
+    // ==========================
+// 載入 HEIC 轉換工具
+// ==========================
+
+function loadHeic2Any() {
+
+    return new Promise(
+        function(resolve, reject) {
+
+            if (
+                typeof heic2any !==
+                'undefined'
+            ) {
+
+                resolve(
+                    heic2any
+                );
+
+                return;
+
+            }
+
+            const script =
+                document.createElement(
+                    'script'
+                );
+
+            script.src =
+                'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+
+            script.onload =
+                function() {
+
+                    if (
+                        typeof heic2any !==
+                        'undefined'
+                    ) {
+
+                        resolve(
+                            heic2any
+                        );
+
+                    } else {
+
+                        reject(
+                            new Error(
+                                'HEIC 工具載入失敗'
+                            )
+                        );
+
+                    }
+
+                };
+
+            script.onerror =
+                function() {
+
+                    reject(
+                        new Error(
+                            '無法載入 HEIC 轉換工具'
+                        )
+                    );
+
+                };
+
+            document.head.appendChild(
+                script
+            );
+
+        }
+    );
+
+}
 
 
     const SUPABASE_URL =
@@ -340,91 +413,225 @@
     let editingImages = [];
 
 
-    // 預覽圖片
+    // ==========================
+// 最新消息照片預覽
+// HEIC / HEIF 自動轉 JPEG
+// ==========================
 
-    document
-    .getElementById('newsImage')
-    .addEventListener(
-        'change',
-        function () {
+document
+.getElementById('newsImage')
+.addEventListener(
+    'change',
+    async function () {
 
-            const files = this.files;
+        const files = this.files;
 
-            const preview =
-                document.getElementById(
-                    'preview'
-                );
+        const preview =
+            document.getElementById(
+                'preview'
+            );
 
-            preview.innerHTML = '';
+        preview.innerHTML = '';
 
-            if (
-                !files ||
-                files.length === 0
-            ) {
-                preview.style.display =
-                    'none';
-
-                return;
-            }
+        if (
+            !files ||
+            files.length === 0
+        ) {
 
             preview.style.display =
-                'flex';
+                'none';
 
-            preview.style.flexWrap =
-                'wrap';
+            return;
 
-            preview.style.gap =
-                '10px';
+        }
 
+        preview.style.display =
+            'flex';
 
-            for (
-                let i = 0;
-                i < files.length;
-                i++
-            ) {
+        preview.style.flexWrap =
+            'wrap';
 
-                const file = files[i];
-
-                const reader =
-                    new FileReader();
+        preview.style.gap =
+            '10px';
 
 
-                reader.onload =
-                    function (e) {
+        // 一張一張處理
+        for (
+            let i = 0;
+            i < files.length;
+            i++
+        ) {
 
-                        const image =
-                            document.createElement(
-                                'img'
-                            );
+            const file =
+                files[i];
 
-                        image.src =
-                            e.target.result;
+            const box =
+                document.createElement(
+                    'div'
+                );
 
-                        image.style.width =
-                            '140px';
+            box.style.textAlign =
+                'center';
 
-                        image.style.height =
-                            '100px';
+            box.style.width =
+                '140px';
 
-                        image.style.objectFit =
-                            'cover';
+            preview.appendChild(
+                box
+            );
 
-                        image.style.borderRadius =
-                            '8px';
 
-                        preview.appendChild(
-                            image
+            const image =
+                document.createElement(
+                    'img'
+                );
+
+            image.style.width =
+                '140px';
+
+            image.style.height =
+                '100px';
+
+            image.style.objectFit =
+                'cover';
+
+            image.style.borderRadius =
+                '8px';
+
+            image.style.background =
+                '#f5f5f5';
+
+            image.alt =
+                '圖片預覽';
+
+
+            box.appendChild(
+                image
+            );
+
+
+            // ==========================
+            // 判斷是不是 HEIC
+            // ==========================
+
+            const fileName =
+                file.name.toLowerCase();
+
+            const isHEIC =
+                fileName.endsWith('.heic') ||
+                fileName.endsWith('.heif') ||
+                file.type === 'image/heic' ||
+                file.type === 'image/heif';
+
+
+            // ==========================
+            // HEIC → JPEG
+            // ==========================
+
+            if (isHEIC) {
+
+                const status =
+                    document.createElement(
+                        'div'
+                    );
+
+                status.textContent =
+                    '⏳ HEIC 轉換中...';
+
+                status.style.fontSize =
+                    '13px';
+
+                status.style.color =
+                    '#666';
+
+                status.style.marginTop =
+                    '4px';
+
+                box.appendChild(
+                    status
+                );
+
+
+                try {
+
+                    const heic2any =
+                        await loadHeic2Any();
+
+                    const convertedBlob =
+                        await heic2any({
+
+                            blob:
+                                file,
+
+                            toType:
+                                'image/jpeg',
+
+                            quality:
+                                0.9
+
+                        });
+
+
+                    const jpegBlob =
+                        Array.isArray(
+                            convertedBlob
+                        )
+                            ? convertedBlob[0]
+                            : convertedBlob;
+
+
+                    const imageUrl =
+                        URL.createObjectURL(
+                            jpegBlob
                         );
 
-                    };
+
+                    image.src =
+                        imageUrl;
+
+                    status.textContent =
+                        '✅ HEIC 已轉 JPEG';
 
 
-                reader.readAsDataURL(file);
+                } catch (error) {
+
+                    console.error(
+                        'HEIC 轉換失敗：',
+                        error
+                    );
+
+                    image.style.display =
+                        'none';
+
+                    status.textContent =
+                        '❌ HEIC 無法轉換';
+
+                    status.style.color =
+                        '#b44';
+
+                }
+
+
+            } else {
+
+                // ==========================
+                // 一般圖片
+                // ==========================
+
+                const imageUrl =
+                    URL.createObjectURL(
+                        file
+                    );
+
+                image.src =
+                    imageUrl;
 
             }
 
         }
-    );
+
+    }
+);
 
 
     // 儲存消息
@@ -500,10 +707,13 @@ let imageUrls = [];
 
 // ==========================
 // 上傳多張圖片
+// HEIC / HEIF 自動轉成 JPEG
 // ==========================
 
-if (imageFiles && imageFiles.length > 0) {
-    
+if (
+    imageFiles &&
+    imageFiles.length > 0
+) {
 
     for (
         let i = 0;
@@ -511,17 +721,126 @@ if (imageFiles && imageFiles.length > 0) {
         i++
     ) {
 
-        const imageFile =
+        const originalFile =
             imageFiles[i];
 
+        let uploadFile =
+            originalFile;
+
+        let fileName =
+            originalFile.name;
+
+
+        // ==========================
+        // 判斷 HEIC / HEIF
+        // ==========================
+
+        const lowerName =
+            originalFile.name.toLowerCase();
+
+        const isHEIC =
+            lowerName.endsWith('.heic') ||
+            lowerName.endsWith('.heif') ||
+            originalFile.type === 'image/heic' ||
+            originalFile.type === 'image/heif';
+
+
+        // ==========================
+        // HEIC → JPEG
+        // ==========================
+
+        if (isHEIC) {
+
+            message.textContent =
+                '⏳ 正在轉換第 ' +
+                (i + 1) +
+                ' / ' +
+                imageFiles.length +
+                ' 張 HEIC...';
+
+
+            try {
+
+                const heic2any =
+                    await loadHeic2Any();
+
+
+                const convertedBlob =
+                    await heic2any({
+
+                        blob:
+                            originalFile,
+
+                        toType:
+                            'image/jpeg',
+
+                        quality:
+                            0.9
+
+                    });
+
+
+                const jpegBlob =
+                    Array.isArray(
+                        convertedBlob
+                    )
+                        ? convertedBlob[0]
+                        : convertedBlob;
+
+
+                // 變成真正的 JPEG 檔案
+                uploadFile =
+                    new File(
+                        [
+                            jpegBlob
+                        ],
+                        originalFile.name.replace(
+                            /\.(heic|heif)$/i,
+                            '.jpg'
+                        ),
+                        {
+                            type:
+                                'image/jpeg'
+                        }
+                    );
+
+
+                fileName =
+                    uploadFile.name;
+
+
+            } catch (error) {
+
+                console.error(
+                    'HEIC 轉換失敗：',
+                    error
+                );
+
+
+                message.textContent =
+                    '❌ 第 ' +
+                    (i + 1) +
+                    ' 張 HEIC 轉換失敗';
+
+                return;
+
+            }
+
+        }
+
+
+        // ==========================
+        // 建立檔案副檔名
+        // ==========================
 
         const fileExt =
-            imageFile.name
+            fileName
                 .split('.')
-                .pop();
+                .pop()
+                .toLowerCase();
 
 
-        const fileName =
+        const fileNameForStorage =
             'news-' +
             Date.now() +
             '-' +
@@ -532,7 +851,19 @@ if (imageFiles && imageFiles.length > 0) {
 
         const filePath =
             'news/' +
-            fileName;
+            fileNameForStorage;
+
+
+        // ==========================
+        // 上傳
+        // ==========================
+
+        message.textContent =
+            '⏳ 正在上傳第 ' +
+            (i + 1) +
+            ' / ' +
+            imageFiles.length +
+            ' 張圖片...';
 
 
         const {
@@ -543,7 +874,14 @@ if (imageFiles && imageFiles.length > 0) {
                 .from('site-images')
                 .upload(
                     filePath,
-                    imageFile
+                    uploadFile,
+                    {
+                        contentType:
+                            uploadFile.type,
+
+                        upsert:
+                            false
+                    }
                 );
 
 
@@ -554,6 +892,7 @@ if (imageFiles && imageFiles.length > 0) {
                 uploadError
             );
 
+
             message.textContent =
                 '❌ 第 ' +
                 (i + 1) +
@@ -563,6 +902,10 @@ if (imageFiles && imageFiles.length > 0) {
 
         }
 
+
+        // ==========================
+        // 取得圖片網址
+        // ==========================
 
         const imageUrl =
             SUPABASE_URL +

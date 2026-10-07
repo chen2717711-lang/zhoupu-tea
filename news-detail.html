@@ -211,11 +211,11 @@
 
 <div class="container">
 
-    <a
-        href="index.html#news"
-        class="back">
-        ← 返回最新消息
-    </a>
+  <a
+    href="javascript:history.back()"
+    class="back">
+    ← 返回最新消息
+</a>
 
 
     <div
@@ -266,6 +266,8 @@
 
     const newsId =
         params.get('id');
+        const page =
+    params.get('page') || 1;
 
 
     // ==========================

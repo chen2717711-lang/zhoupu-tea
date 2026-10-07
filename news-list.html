@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <title>最新消息｜拙璞山茶</title>
+
+   <style>
+
+    body {
+
+        margin: 0;
+
+        font-family:
+            "Noto Sans TC",
+            Arial,
+            sans-serif;
+
+        background: #f7f5f0;
+
+        color: #333;
+
+    }
+
+
+    .container {
+
+        max-width: 1000px;
+
+        margin: 0 auto;
+
+        padding: 60px 20px;
+
+    }
+
+
+    h1 {
+
+        text-align: center;
+
+        margin-bottom: 40px;
+
+        color: #315b3b;
+
+    }
+
+
+    .news-list {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 20px;
+
+    }
+
+
+    .news-item {
+
+        position: relative;
+
+        background: white;
+
+        border-radius: 12px;
+
+        padding: 15px 20px;
+
+        box-shadow:
+            0 2px 10px
+            rgba(0, 0, 0, 0.06);
+
+        cursor: pointer;
+
+        transition:
+            transform 0.2s,
+            box-shadow 0.2s;
+
+    }
+
+
+    .news-item:hover {
+
+        transform:
+            translateY(-2px);
+
+        box-shadow:
+            0 5px 18px
+            rgba(0, 0, 0, 0.1);
+
+    }
+
+
+    .news-number {
+
+        position: absolute;
+
+        left: -28px;
+
+        top: 20px;
+
+        font-size: 14px;
+
+        font-weight: bold;
+
+        color: #315b3b;
+
+        width: 20px;
+
+        text-align: center;
+
+    }
+
+
+    .news-item img {
+
+        width: 180px;
+
+        height: 120px;
+
+        object-fit: cover;
+
+        border-radius: 8px;
+
+        float: left;
+
+        margin-right: 20px;
+
+        margin-bottom: 5px;
+
+    }
+
+
+    .news-date {
+
+        color: #888;
+
+        font-size: 14px;
+
+        margin-bottom: 8px;
+
+    }
+
+
+    .news-title {
+
+        font-size: 22px;
+
+        font-weight: bold;
+
+        color: #315b3b;
+
+        margin-bottom: 10px;
+
+    }
+
+
+    .news-content {
+
+        color: #666;
+
+        line-height: 1.7;
+
+    }
+
+
+    .news-item::after {
+
+        content: "";
+
+        display: block;
+
+        clear: both;
+
+    }
+
+
+    .pagination {
+
+        display: flex;
+
+        justify-content: center;
+
+        align-items: center;
+
+        gap: 8px;
+
+        margin-top: 40px;
+
+        flex-wrap: wrap;
+
+    }
+
+
+    .pagination button {
+
+        border: none;
+
+        background: white;
+
+        color: #315b3b;
+
+        border-radius: 8px;
+
+        padding: 10px 15px;
+
+        cursor: pointer;
+
+        font-size: 15px;
+
+    }
+
+
+    .pagination button.active {
+
+        background: #315b3b;
+
+        color: white;
+
+    }
+
+
+    .pagination button:hover {
+
+        background: #315b3b;
+
+        color: white;
+
+    }
+
+
+    .back-home {
+
+        display: inline-block;
+
+        margin-bottom: 30px;
+
+        color: #315b3b;
+
+        text-decoration: none;
+
+    }
+
+</style>
+
+</head>
+
+
+<body>
+
+
+    <div class="container">
+
+
+        <a
+            href="index.html"
+            class="back-home">
+
+            ← 回首頁
+
+        </a>
+
+
+        <h1>
+            最新消息
+        </h1>
+
+
+        <div
+            id="newsList"
+            class="news-list">
+
+        </div>
+
+
+        <div
+            id="pagination"
+            class="pagination">
+
+        </div>
+
+
+    </div>
+
+
+    <script>
+
+    const SUPABASE_URL =
+        'https://tbakknfdijlwzggqrrzc.supabase.co';
+
+
+    const SUPABASE_KEY =
+        'sb_publishable_C4MU15NKj3NsB24466kMYQ_G9OQT93-';
+
+
+    const supabaseClient =
+        supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_KEY
+        );
+
+
+    const newsPerPage = 10;
+
+    let allNews = [];
+
+let currentPage =
+    parseInt(
+        new URLSearchParams(
+            window.location.search
+        ).get('page')
+    ) || 1;
+
+    async function loadNews() {
+
+        const newsList =
+            document.getElementById(
+                'newsList'
+            );
+
+
+        newsList.innerHTML =
+            '<p style="text-align:center;">載入中...</p>';
+
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from('site_content')
+                .select('*')
+                .eq('key', 'news')
+                .order(
+                    'updated_at',
+                    {
+                        ascending: false
+                    }
+                );
+
+
+        console.log(
+            '抓到的最新消息資料：',
+            data
+        );
+
+
+        if (error) {
+
+            console.error(
+                '讀取最新消息失敗：',
+                error
+            );
+
+
+            newsList.innerHTML =
+                '<p style="text-align:center;">❌ 最新消息載入失敗</p>';
+
+
+            return;
+
+        }
+
+
+        if (
+            !data ||
+            data.length === 0
+        ) {
+
+            newsList.innerHTML =
+                '<p style="text-align:center;">目前沒有最新消息</p>';
+
+
+            return;
+
+        }
+
+
+        allNews = [];
+
+
+        data.forEach(
+            function(row) {
+
+                try {
+
+                    const news =
+                        JSON.parse(
+                            row.content
+                        );
+
+
+                    allNews.push({
+
+                        id:
+                            row.id,
+
+                        title:
+                            news.title || '',
+
+                        content:
+                            news.content || '',
+
+                        date:
+                            news.date || '',
+
+                        image:
+                            news.image || '',
+
+                        images:
+                            Array.isArray(
+                                news.images
+                            )
+                                ? news.images
+                                : []
+
+                    });
+
+
+                } catch (error) {
+
+                    console.error(
+                        '消息資料格式錯誤：',
+                        error
+                    );
+
+                }
+
+            }
+        );
+
+
+        console.log(
+            '整理後的最新消息：',
+            allNews
+        );
+
+
+        renderNews();
+
+    }
+
+
+    function renderNews() {
+
+        const newsList =
+            document.getElementById(
+                'newsList'
+            );
+
+
+        const start =
+            (currentPage - 1) *
+            newsPerPage;
+
+
+        const end =
+            start +
+            newsPerPage;
+
+
+        const pageNews =
+            allNews.slice(
+                start,
+                end
+            );
+
+
+        if (
+            pageNews.length === 0
+        ) {
+
+            newsList.innerHTML =
+                '<p style="text-align:center;">目前沒有最新消息</p>';
+
+
+            renderPagination();
+
+
+            return;
+
+        }
+
+
+        newsList.innerHTML =
+            pageNews.map(
+                function(news) {
+
+                    let imageUrl = '';
+
+
+                    if (
+                        Array.isArray(
+                            news.images
+                        ) &&
+                        news.images.length > 0
+                    ) {
+
+                        imageUrl =
+                            news.images[0];
+
+                    }
+                    else if (
+                        news.image
+                    ) {
+
+                        imageUrl =
+                            news.image;
+
+                    }
+
+
+                    const newsNumber =
+    start + pageNews.indexOf(news) + 1;
+
+
+return `
+    <div
+        class="news-item"
+        onclick="openNews(${news.id})"
+        style="cursor:pointer;"
+    >
+
+        <div class="news-number">
+            ${newsNumber}
+        </div>
+
+
+        ${
+            imageUrl
+                ? `
+                    <img
+                        src="${imageUrl}"
+                        alt=""
+                    >
+                `
+                : ''
+        }
+
+
+        <div>
+
+            <div class="news-date">
+                ${news.date}
+            </div>
+
+
+            <h2 class="news-title">
+                ${news.title}
+            </h2>
+
+
+            <p class="news-content">
+                ${news.content}
+            </p>
+
+        </div>
+
+    </div>
+`;
+
+                }
+            ).join('');
+
+
+        renderPagination();
+
+    }
+
+
+  function openNews(id) {
+    window.location.href =
+        'news-detail.html?id=' +
+        id +
+        '&page=' +
+        currentPage;
+}
+
+
+    function renderPagination() {
+
+        const pagination =
+            document.getElementById(
+                'pagination'
+            );
+
+
+        if (!pagination) {
+            return;
+        }
+
+
+        const totalPages =
+            Math.ceil(
+                allNews.length /
+                newsPerPage
+            );
+
+
+        pagination.innerHTML = '';
+
+
+        if (
+            totalPages <= 1
+        ) {
+
+            return;
+
+        }
+
+
+        for (
+            let i = 1;
+            i <= totalPages;
+            i++
+        ) {
+
+            const button =
+                document.createElement(
+                    'button'
+                );
+
+
+            button.textContent =
+                '第 ' + i + ' 頁';
+
+
+           button.onclick =
+    function() {
+
+        currentPage = i;
+
+        window.history.pushState(
+            {},
+            '',
+            'news-list.html?page=' +
+            currentPage
+        );
+
+        renderNews();
+
+
+        window.scrollTo({
+
+            top: 0,
+
+            behavior: 'smooth'
+
+        });
+
+    };
+
+
+            if (
+                i === currentPage
+            ) {
+
+                button.style.fontWeight =
+                    'bold';
+
+            }
+
+
+            pagination.appendChild(
+                button
+            );
+
+        }
+
+    }
+
+
+    loadNews();
+
+</script>
+</body>
+
+</html>

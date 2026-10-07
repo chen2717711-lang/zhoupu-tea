@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>作品展示｜拙璞山茶</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+
+            margin: 0;
+
+            font-family:
+                "Noto Sans TC",
+                Arial,
+                sans-serif;
+
+            background: #f7f5f0;
+
+            color: #333;
+
+        }
+
+        .container {
+
+            max-width: 1400px;
+
+            margin: 0 auto;
+
+            padding: 50px 25px 80px;
+
+        }
+
+        .back-home {
+
+            display: inline-block;
+
+            margin-bottom: 30px;
+
+            color: #315b3b;
+
+            text-decoration: none;
+
+            font-size: 15px;
+
+        }
+
+        .back-home:hover {
+
+            text-decoration: underline;
+
+        }
+
+        .section-title {
+
+            text-align: center;
+
+            margin-bottom: 45px;
+
+        }
+
+        .section-title small {
+
+            display: block;
+
+            color: #315b3b;
+
+            font-size: 13px;
+
+            letter-spacing: 3px;
+
+            margin-bottom: 8px;
+
+        }
+
+        .section-title h1 {
+
+            margin: 0;
+
+            color: #315b3b;
+
+            font-size: 34px;
+
+        }
+
+
+        /* ===== 圖片牆 ===== */
+
+        .gallery-wall {
+
+    column-count: 5;
+
+    column-gap: 10px;
+
+}
+
+.gallery-item {
+
+    break-inside: avoid;
+
+    margin-bottom: 10px;
+
+    cursor: pointer;
+
+    overflow: hidden;
+
+    border-radius: 8px;
+
+    background: #eee;
+
+    line-height: 0;
+
+}
+
+.gallery-item img {
+
+    display: block;
+
+    width: 100%;
+
+    height: auto;
+
+    object-fit: contain;
+
+    transition:
+        transform 0.25s ease;
+
+}
+
+.gallery-item:hover img {
+
+    transform: scale(1.03);
+
+}
+
+        .gallery-item {
+
+            margin: 0;
+
+            padding: 0;
+
+            cursor: pointer;
+
+            overflow: hidden;
+
+            border-radius: 8px;
+
+            background: #eee;
+
+            line-height: 0;
+
+        }
+
+        .gallery-item img {
+
+            display: block;
+
+            width: 100%;
+
+            height: auto;
+
+            object-fit: contain;
+
+            transition:
+                transform 0.25s ease;
+
+        }
+
+        .gallery-item:hover img {
+
+            transform: scale(1.03);
+
+        }
+
+
+        /* ===== 黑底放大 ===== */
+
+        .lightbox {
+
+            display: none;
+
+            position: fixed;
+
+            z-index: 9999;
+
+            inset: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            background: rgba(0, 0, 0, 0.94);
+
+            justify-content: center;
+
+            align-items: center;
+
+            padding: 30px;
+
+            cursor: pointer;
+
+        }
+
+        .lightbox.show {
+
+            display: flex;
+
+        }
+
+        .lightbox img {
+
+            max-width: 95vw;
+
+            max-height: 92vh;
+
+            width: auto;
+
+            height: auto;
+
+            object-fit: contain;
+
+            border-radius: 4px;
+
+            cursor: default;
+
+        }
+
+
+        /* ===== 載入文字 ===== */
+
+        .loading {
+
+            text-align: center;
+
+            color: #777;
+
+            padding: 60px 20px;
+
+            grid-column: 1 / -1;
+
+        }
+
+
+        /* ===== 平板 ===== */
+
+        @media (max-width: 1000px) {
+
+    .gallery-wall {
+
+        column-count: 4;
+
+    }
+
+}
+
+
+        /* ===== 手機 ===== */
+
+       @media (max-width: 700px) {
+
+    .container {
+
+        padding:
+            35px 12px 60px;
+
+    }
+
+    .section-title {
+
+        margin-bottom: 30px;
+
+    }
+
+    .section-title h1 {
+
+        font-size: 28px;
+
+    }
+
+    .gallery-wall {
+
+        column-count: 2;
+
+        column-gap: 7px;
+
+    }
+
+    .gallery-item {
+
+        margin-bottom: 7px;
+
+    }
+
+    .lightbox {
+
+        padding: 10px;
+
+    }
+
+    .lightbox img {
+
+        max-width: 98vw;
+
+        max-height: 90vh;
+
+    }
+
+}
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <div class="container">
+
+
+        <a
+            href="index.html"
+            class="back-home">
+
+            ← 回首頁
+
+        </a>
+
+
+        <div class="section-title">
+
+            <small>GALLERY</small>
+
+            <h1>作品展示</h1>
+
+        </div>
+
+
+        <div
+            id="galleryWall"
+            class="gallery-wall">
+
+            <div class="loading">
+
+                正在載入照片...
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- ===== 圖片放大 ===== -->
+
+    <div
+        id="lightbox"
+        class="lightbox">
+
+        <img
+            id="lightboxImage"
+            src=""
+            alt="">
+
+    </div>
+
+
+    <script>
+
+
+        // ===== Supabase =====
+
+        const SUPABASE_URL =
+            'https://tbakknfdijlwzggqrrzc.supabase.co';
+
+
+        const SUPABASE_KEY =
+            'sb_publishable_C4MU15NKj3NsB24466kMYQ_G9OQT93-';
+
+
+        const supabaseClient =
+            supabase.createClient(
+                SUPABASE_URL,
+                SUPABASE_KEY
+            );
+
+
+        // ===== 取得圖片 =====
+
+        async function loadGallery() {
+
+            const galleryWall =
+                document.getElementById(
+                    'galleryWall'
+                );
+
+
+            const {
+                data,
+                error
+            } = await supabaseClient
+
+                .from('site_content')
+
+                .select('*')
+
+                .eq('key', 'gallery')
+
+                .order('id', {
+                    ascending: false
+                });
+
+
+            if (error) {
+
+                console.error(error);
+
+                galleryWall.innerHTML = `
+
+                    <div class="loading">
+
+                        照片載入失敗
+
+                    </div>
+
+                `;
+
+                return;
+
+            }
+
+
+            if (!data || data.length === 0) {
+
+                galleryWall.innerHTML = `
+
+                    <div class="loading">
+
+                        目前還沒有作品照片
+
+                    </div>
+
+                `;
+
+                return;
+
+            }
+
+
+            galleryWall.innerHTML = '';
+
+
+            data.forEach(item => {
+
+
+                try {
+
+                    const content =
+                        JSON.parse(
+                            item.content
+                        );
+
+
+                    if (!content.image) {
+
+                        return;
+
+                    }
+
+
+                    const div =
+                        document.createElement(
+                            'div'
+                        );
+
+                    div.className =
+                        'gallery-item';
+
+
+                    const img =
+                        document.createElement(
+                            'img'
+                        );
+
+
+                    img.src =
+                        content.image;
+
+                    img.alt =
+                        '拙璞山茶作品';
+
+
+                    div.appendChild(img);
+
+
+                    div.addEventListener(
+                        'click',
+                        function() {
+
+                            openLightbox(
+                                content.image
+                            );
+
+                        }
+                    );
+
+
+                    galleryWall.appendChild(
+                        div
+                    );
+
+
+                } catch (e) {
+
+                    console.error(
+                        '照片資料錯誤:',
+                        e
+                    );
+
+                }
+
+            });
+
+        }
+
+
+        // ===== 開啟圖片 =====
+
+        function openLightbox(imageUrl) {
+
+            const lightbox =
+                document.getElementById(
+                    'lightbox'
+                );
+
+            const lightboxImage =
+                document.getElementById(
+                    'lightboxImage'
+                );
+
+
+            lightboxImage.src =
+                imageUrl;
+
+
+            lightbox.classList.add(
+                'show'
+            );
+
+        }
+
+
+        // ===== 點黑底關閉 =====
+
+        document
+            .getElementById('lightbox')
+            .addEventListener(
+                'click',
+                function(event) {
+
+                    if (
+                        event.target.id ===
+                        'lightbox'
+                    ) {
+
+                        this.classList.remove(
+                            'show'
+                        );
+
+                        document
+                            .getElementById(
+                                'lightboxImage'
+                            )
+                            .src = '';
+
+                    }
+
+                }
+            );
+
+
+        // ===== ESC 關閉 =====
+
+        document.addEventListener(
+            'keydown',
+            function(event) {
+
+                if (
+                    event.key === 'Escape'
+                ) {
+
+                    document
+                        .getElementById(
+                            'lightbox'
+                        )
+                        .classList.remove(
+                            'show'
+                        );
+
+                }
+
+            }
+        );
+
+
+        // ===== 啟動 =====
+
+        loadGallery();
+
+
+    </script>
+
+
+</body>
+
+</html>

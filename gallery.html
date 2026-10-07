@@ -111,12 +111,14 @@
     }
 
     .photo-item img {
-        width: 100%;
-        height: 200px;
-        object-fit: cover;
-        border-radius: 8px;
-        display: block;
-    }
+    width: 100%;
+    height: auto;
+    max-height: 300px;
+    object-fit: contain;
+    border-radius: 8px;
+    display: block;
+    background: #eee;
+}
 
     .message {
         margin-top: 15px;
@@ -158,9 +160,10 @@
     <h2>📷 上傳作品照片</h2>
 
     <input
-        type="file"
-        id="galleryImage"
-        accept="image/*">
+    type="file"
+    id="galleryImage"
+    accept="image/*"
+    multiple>
 
     <div id="preview"></div>
 
@@ -218,85 +221,452 @@
 
 
     // ==========================
-    // 圖片預覽
-    // ==========================
+// ==========================
+// 圖片預覽
+// HEIC 自動轉成 JPEG
+// ==========================
 
-    document
-        .getElementById('galleryImage')
-        .addEventListener(
-            'change',
-            function(event) {
+const galleryImage =
+    document.getElementById('galleryImage');
 
-                const file =
-                    event.target.files[0];
+const preview =
+    document.getElementById('preview');
 
-                const preview =
-                    document.getElementById(
-                        'preview'
+galleryImage.addEventListener(
+    'change',
+    async function(event) {
+
+        const files =
+            event.target.files;
+
+        preview.innerHTML = '';
+
+        if (
+            !files ||
+            files.length === 0
+        ) {
+            return;
+        }
+
+        for (
+            let i = 0;
+            i < files.length;
+            i++
+        ) {
+
+            const file =
+                files[i];
+
+            // 建立預覽區
+            const box =
+                document.createElement('div');
+
+            box.style.display =
+                'inline-block';
+
+            box.style.verticalAlign =
+                'top';
+
+            box.style.margin =
+                '5px';
+
+            box.style.textAlign =
+                'center';
+
+            // 建立圖片
+            const img =
+                document.createElement('img');
+
+            img.alt =
+                '圖片預覽';
+
+            img.style.width =
+                '180px';
+
+            img.style.height =
+                '130px';
+
+            img.style.objectFit =
+                'contain';
+
+            img.style.display =
+                'block';
+
+            img.style.borderRadius =
+                '8px';
+
+            img.style.background =
+                '#f5f5f5';
+
+            // 先放入畫面
+            box.appendChild(img);
+
+            preview.appendChild(box);
+
+            // ==========================
+            // 判斷是不是 HEIC
+            // ==========================
+
+            const fileName =
+                file.name.toLowerCase();
+
+            const isHEIC =
+                fileName.endsWith('.heic') ||
+                fileName.endsWith('.heif') ||
+                file.type === 'image/heic' ||
+                file.type === 'image/heif';
+
+            if (isHEIC) {
+
+                // HEIC 瀏覽器通常無法直接顯示
+                img.alt =
+                    'HEIC 處理中...';
+
+                const text =
+                    document.createElement(
+                        'div'
                     );
 
-                preview.innerHTML = '';
+                text.textContent =
+                    '⏳ HEIC 處理中...';
 
-                if (!file) return;
+                text.style.marginTop =
+                    '5px';
+
+                text.style.fontSize =
+                    '14px';
+
+                text.style.color =
+                    '#666';
+
+                box.appendChild(text);
+
+                try {
+
+                    // 載入 HEIC 轉檔工具
+                    const heic2any =
+                        await loadHeic2Any();
+
+                    // HEIC → JPEG
+                    const convertedBlob =
+                        await heic2any({
+                            blob: file,
+                            toType:
+                                'image/jpeg',
+                            quality:
+                                0.9
+                        });
+
+                    const jpegBlob =
+                        Array.isArray(
+                            convertedBlob
+                        )
+                            ? convertedBlob[0]
+                            : convertedBlob;
+
+                    const imageUrl =
+                        URL.createObjectURL(
+                            jpegBlob
+                        );
+
+                    img.src =
+                        imageUrl;
+
+                    img.alt =
+                        'HEIC 預覽';
+
+                    text.textContent =
+                        '✅ HEIC 已轉換';
+
+                } catch (error) {
+
+                    console.error(
+                        'HEIC 轉換失敗：',
+                        error
+                    );
+
+                    img.style.display =
+                        'none';
+
+                    text.textContent =
+                        '❌ HEIC 無法轉換';
+
+                    text.style.color =
+                        '#b44';
+
+                }
+
+            } else {
+
+                // ==========================
+                // JPG / PNG 等一般圖片
+                // ==========================
 
                 const imageUrl =
-                    URL.createObjectURL(file);
+                    URL.createObjectURL(
+                        file
+                    );
 
-                preview.innerHTML = `
-
-                    <img
-                        src="${imageUrl}"
-                        alt="圖片預覽">
-
-                `;
+                img.src =
+                    imageUrl;
 
             }
-        );
-
-
-    // ==========================
-    // 上傳照片
-    // ==========================
-
-    async function uploadGalleryImage() {
-
-        const file =
-            document
-                .getElementById(
-                    'galleryImage'
-                )
-                .files[0];
-
-
-        if (!file) {
-
-            alert('請先選擇一張照片');
-
-            return;
 
         }
 
+    }
+);
 
-      const fileExt =
-    file.name.split('.').pop();
 
-const fileName =
-    'gallery-' +
-    Date.now() +
-    '.' +
-    fileExt;
+// ==========================
+// 載入 HEIC 轉換工具
+// ==========================
 
-        // 上傳到 Storage
+function loadHeic2Any() {
 
-        const { error: uploadError } =
+    return new Promise(
+        function(resolve, reject) {
+
+            // 如果已經載入
+            if (
+                typeof heic2any !==
+                'undefined'
+            ) {
+                resolve(heic2any);
+                return;
+            }
+
+            const script =
+                document.createElement(
+                    'script'
+                );
+
+            script.src =
+                'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+
+            script.onload =
+                function() {
+
+                    if (
+                        typeof heic2any !==
+                        'undefined'
+                    ) {
+                        resolve(
+                            heic2any
+                        );
+                    } else {
+                        reject(
+                            new Error(
+                                'HEIC 工具載入失敗'
+                            )
+                        );
+                    }
+
+                };
+
+            script.onerror =
+                function() {
+
+                    reject(
+                        new Error(
+                            '無法載入 HEIC 轉換工具'
+                        )
+                    );
+
+                };
+
+            document.head.appendChild(
+                script
+            );
+
+        }
+    );
+
+}
+
+    // ==========================
+// 上傳照片
+// HEIC 自動轉成 JPEG
+// ==========================
+
+async function uploadGalleryImage() {
+
+    const files =
+        document
+            .getElementById('galleryImage')
+            .files;
+
+    if (
+        !files ||
+        files.length === 0
+    ) {
+
+        alert('請先選擇照片');
+
+        return;
+
+    }
+
+    const message =
+        document.getElementById(
+            'message'
+        );
+
+    message.textContent =
+        '⏳ 正在處理 ' +
+        files.length +
+        ' 張照片，請稍候...';
+
+    let successCount = 0;
+
+    // 一張一張處理
+    for (
+        let i = 0;
+        i < files.length;
+        i++
+    ) {
+
+        const originalFile =
+            files[i];
+
+        let uploadFile =
+            originalFile;
+
+        let fileName =
+            originalFile.name;
+
+        // ==========================
+        // 判斷 HEIC
+        // ==========================
+
+        const lowerName =
+            originalFile.name.toLowerCase();
+
+        const isHEIC =
+            lowerName.endsWith('.heic') ||
+            lowerName.endsWith('.heif') ||
+            originalFile.type === 'image/heic' ||
+            originalFile.type === 'image/heif';
+
+        // ==========================
+        // HEIC → JPEG
+        // ==========================
+
+        if (isHEIC) {
+
+            message.textContent =
+                '⏳ 正在轉換第 ' +
+                (i + 1) +
+                ' / ' +
+                files.length +
+                ' 張 HEIC...';
+
+            try {
+
+                const heic2any =
+                    await loadHeic2Any();
+
+                const convertedBlob =
+                    await heic2any({
+                        blob:
+                            originalFile,
+
+                        toType:
+                            'image/jpeg',
+
+                        quality:
+                            0.9
+                    });
+
+                const jpegBlob =
+                    Array.isArray(
+                        convertedBlob
+                    )
+                        ? convertedBlob[0]
+                        : convertedBlob;
+
+                // 變成真正的 JPEG File
+                uploadFile =
+                    new File(
+                        [
+                            jpegBlob
+                        ],
+                        originalFile.name
+                            .replace(
+                                /\.(heic|heif)$/i,
+                                '.jpg'
+                            ),
+                        {
+                            type:
+                                'image/jpeg'
+                        }
+                    );
+
+                fileName =
+                    uploadFile.name;
+
+            } catch (error) {
+
+                console.error(
+                    'HEIC 轉換失敗：',
+                    error
+                );
+
+                continue;
+
+            }
+
+        }
+
+        // ==========================
+        // 建立 Storage 檔名
+        // ==========================
+
+        const fileExt =
+            fileName
+                .split('.')
+                .pop()
+                .toLowerCase();
+
+        const storageFileName =
+            'gallery-' +
+            Date.now() +
+            '-' +
+            Math.random()
+                .toString(36)
+                .substring(2, 8) +
+            '.' +
+            fileExt;
+
+        // ==========================
+        // 上傳 Storage
+        // ==========================
+
+        message.textContent =
+            '⏳ 正在上傳第 ' +
+            (i + 1) +
+            ' / ' +
+            files.length +
+            ' 張照片...';
+
+        const {
+            error: uploadError
+        } =
             await supabaseClient
                 .storage
                 .from('site-images')
                 .upload(
-                    fileName,
-                    file
-                );
+                    storageFileName,
+                    uploadFile,
+                    {
+                        contentType:
+                            uploadFile.type ||
+                            'image/jpeg',
 
+                        upsert:
+                            false
+                    }
+                );
 
         if (uploadError) {
 
@@ -305,47 +675,50 @@ const fileName =
                 uploadError
             );
 
-            alert(
-                '照片上傳失敗：' +
-                uploadError.message
-            );
-
-            return;
+            continue;
 
         }
 
-
+        // ==========================
         // 取得公開網址
+        // ==========================
 
-        const { data } =
+        const {
+            data
+        } =
             supabaseClient
                 .storage
                 .from('site-images')
                 .getPublicUrl(
-                    fileName
+                    storageFileName
                 );
-
 
         const imageUrl =
             data.publicUrl;
 
+        // ==========================
+        // 儲存網址到 site_content
+        // ==========================
 
-        // 儲存圖片網址到 site_content
-
-        const { error } =
+        const {
+            error
+        } =
             await supabaseClient
                 .from('site_content')
                 .insert({
 
-                    key: 'gallery',
+                    key:
+                        'gallery',
 
                     content:
                         JSON.stringify({
-                            image: imageUrl
+
+                            image:
+                                imageUrl
+
                         })
 
                 });
-
 
         if (error) {
 
@@ -354,208 +727,325 @@ const fileName =
                 error
             );
 
-            alert(
-                '照片儲存失敗：' +
-                error.message
-            );
-
-            return;
+            continue;
 
         }
 
-
-        document
-            .getElementById(
-                'message'
-            )
-            .textContent =
-                '✅ 照片已成功上傳！';
-
-
-        // 清除選擇
-
-        document
-            .getElementById(
-                'galleryImage'
-            )
-            .value = '';
-
-
-        document
-            .getElementById(
-                'preview'
-            )
-            .innerHTML = '';
-
-
-        // 重新讀取照片
-
-        loadGallery();
+        successCount++;
 
     }
 
-
     // ==========================
-    // 讀取照片
+    // 顯示結果
     // ==========================
 
-    async function loadGallery() {
+    message.textContent =
+        '✅ 成功上傳 ' +
+        successCount +
+        ' 張照片！';
 
-        const { data, error } =
-            await supabaseClient
-                .from('site_content')
-                .select(
-                    'id, content'
-                )
-                .eq(
-                    'key',
-                    'gallery'
-                )
-                .order(
-                    'id',
-                    {
-                        ascending: false
-                    }
-                );
+    // 清除選擇
+    document
+        .getElementById(
+            'galleryImage'
+        )
+        .value = '';
 
+    // 清除預覽
+    document
+        .getElementById(
+            'preview'
+        )
+        .innerHTML = '';
 
-        if (error) {
+    // 重新讀取照片
+    loadGallery();
 
-            console.error(
-                '讀取照片失敗：',
-                error
-            );
+}
+   // ==========================
+// 讀取照片
+// ==========================
 
-            document
-                .getElementById(
-                    'photoList'
-                )
-                .textContent =
-                    '讀取失敗：' +
-                    error.message;
+async function loadGallery() {
 
-            return;
-
-        }
-
-
-        const photoList =
-            document
-                .getElementById(
-                    'photoList'
-                );
-
-
-        photoList.innerHTML = '';
-
-
-        if (!data || data.length === 0) {
-
-            photoList.innerHTML =
-                '<p>目前沒有作品照片。</p>';
-
-            return;
-
-        }
-
-
-        data.forEach(
-            function(row) {
-
-                try {
-
-                    const gallery =
-                        JSON.parse(
-                            row.content
-                        );
-
-
-                    const item =
-                        document.createElement(
-                            'div'
-                        );
-
-                    item.className =
-                        'photo-item';
-
-
-                    item.innerHTML = `
-
-                        <img
-                            src="${gallery.image}"
-                            alt="作品照片">
-
-                        <button
-                            class="delete-button"
-                            onclick="deleteGallery(${row.id})">
-                            🗑️ 刪除
-                        </button>
-
-                    `;
-
-
-                    photoList.appendChild(
-                        item
-                    );
-
-
-                } catch (error) {
-
-                    console.error(
-                        '照片資料格式錯誤：',
-                        error
-                    );
-
-                }
-
-            }
+    const photoList =
+        document.getElementById(
+            'photoList'
         );
 
+    photoList.innerHTML =
+        '<p>正在讀取照片...</p>';
+
+
+    const { data, error } =
+        await supabaseClient
+            .from('site_content')
+            .select('id, content')
+            .eq('key', 'gallery')
+            .order('id', {
+                ascending: false
+            });
+
+
+    if (error) {
+
+        console.error(
+            '讀取照片失敗：',
+            error
+        );
+
+        photoList.innerHTML =
+            '<p>讀取失敗：' +
+            error.message +
+            '</p>';
+
+        return;
+
     }
 
 
-    // ==========================
-    // 刪除照片
-    // ==========================
+    if (!data || data.length === 0) {
 
-    async function deleteGallery(id) {
+        photoList.innerHTML =
+            '<p>目前沒有作品照片。</p>';
 
-        if (
-            !confirm(
-                '確定要刪除這張照片嗎？'
-            )
-        ) {
+        return;
 
-            return;
-
-        }
+    }
 
 
-        const { error } =
-            await supabaseClient
-                .from('site_content')
-                .delete()
-                .eq(
-                    'id',
-                    id
+    photoList.innerHTML = '';
+
+
+    data.forEach(
+        function(row) {
+
+            try {
+
+                const gallery =
+                    JSON.parse(
+                        row.content
+                    );
+
+
+                console.log(
+                    '讀到的照片：',
+                    gallery.image
                 );
 
 
-        if (error) {
+                const item =
+                    document.createElement(
+                        'div'
+                    );
 
-            alert(
-                '刪除失敗：' +
-                error.message
+                item.className =
+                    'photo-item';
+
+
+                // ==========================
+                // 建立圖片
+                // ==========================
+
+                const img =
+                    document.createElement(
+                        'img'
+                    );
+
+                img.alt =
+    '作品照片';
+
+img.src =
+    gallery.image;
+
+img.style.width =
+    '100%';
+
+img.style.height =
+    'auto';
+
+img.style.display =
+    'block';
+
+img.style.objectFit =
+    'contain';
+
+img.setAttribute(
+    'referrerpolicy',
+    'no-referrer'
+);
+
+
+                img.onload =
+                    function() {
+
+                        console.log(
+                            '圖片載入成功：',
+                            gallery.image
+                        );
+
+                    };
+
+
+                img.onerror =
+    function() {
+
+        console.error(
+            '❌ 圖片載入失敗：',
+            gallery.image
+        );
+
+        img.style.display =
+            'none';
+
+        const errorText =
+            document.createElement(
+                'p'
             );
 
-            return;
+        errorText.textContent =
+            '❌ 圖片無法載入';
+
+        errorText.style.color =
+            '#b44';
+
+        errorText.style.marginBottom =
+            '10px';
+
+        const urlText =
+            document.createElement(
+                'a'
+            );
+
+        urlText.href =
+            gallery.image;
+
+        urlText.target =
+            '_blank';
+
+        urlText.rel =
+            'noopener noreferrer';
+
+        urlText.textContent =
+            '🔗 在新分頁開啟這張圖片';
+
+        urlText.style.display =
+            'block';
+
+        urlText.style.marginBottom =
+            '10px';
+
+        item.insertBefore(
+            errorText,
+            deleteButton
+        );
+
+        item.insertBefore(
+            urlText,
+            deleteButton
+        );
+
+    };
+
+
+                item.appendChild(
+                    img
+                );
+
+
+                // ==========================
+                // 建立刪除按鈕
+                // ==========================
+
+                const deleteButton =
+                    document.createElement(
+                        'button'
+                    );
+
+                deleteButton.className =
+                    'delete-button';
+
+                deleteButton.textContent =
+                    '🗑️ 刪除';
+
+
+                deleteButton.onclick =
+                    function() {
+
+                        deleteGallery(
+                            row.id
+                        );
+
+                    };
+
+
+                item.appendChild(
+                    deleteButton
+                );
+
+
+                photoList.appendChild(
+                    item
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    '照片資料格式錯誤：',
+                    error
+                );
+
+            }
 
         }
+    );
+
+}
 
 
-        loadGallery();
+// ==========================
+// 刪除照片
+// ==========================
+
+async function deleteGallery(id) {
+
+    if (
+        !confirm(
+            '確定要刪除這張照片嗎？'
+        )
+    ) {
+
+        return;
 
     }
+
+
+    const { error } =
+        await supabaseClient
+            .from('site_content')
+            .delete()
+            .eq(
+                'id',
+                id
+            );
+
+
+    if (error) {
+
+        alert(
+            '刪除失敗：' +
+            error.message
+        );
+
+        return;
+
+    }
+
+
+    loadGallery();
+
+}
 
 
     // ==========================

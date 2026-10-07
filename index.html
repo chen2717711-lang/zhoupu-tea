@@ -1046,7 +1046,7 @@ html
         type="button"
         id="newsMoreButton"
         class="news-more-button"
-        onclick="toggleAllNews()">
+        onclick="window.location.href='news-list.html'">
         更多消息 →
     </button>
 </div>
@@ -1098,15 +1098,25 @@ html
 
         </div>
 
-        <button
-            type="button"
-            id="galleryMoreButton"
-            class="gallery-more-button"
-            onclick="toggleAllGallery()">
+        <div style="text-align: center; margin-top: 30px;">
 
-            更多作品 →
+    <a
+        href="gallery-list.html"
+        style="
+            display: inline-block;
+            padding: 12px 28px;
+            background: #315b3b;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 15px;
+        ">
 
-        </button>
+        更多作品 →
+
+    </a>
+
+</div>
 
     </div>
 
@@ -2386,18 +2396,26 @@ function renderGallery() {
     let displayItems;
 
 
-    if (showingAllGallery) {
+   if (showingAllGallery) {
 
-        displayItems =
-            allGalleryItems;
+    displayItems =
+        allGalleryItems;
 
-    } else {
+} else {
 
-        displayItems =
-            allGalleryItems.slice(0, 4);
+    // 電腦顯示 3 張，手機顯示 4 張
+    const galleryLimit =
+        window.innerWidth <= 768
+            ? 4
+            : 3;
 
-    }
+    displayItems =
+        allGalleryItems.slice(
+            0,
+            galleryLimit
+        );
 
+}
 
     // ==========================
     // 建立照片
