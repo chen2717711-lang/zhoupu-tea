@@ -1,32 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
-    <!-- 首頁 -->
     <url>
         <loc>https://chen2717711-lang.github.io/zhoupu-tea/</loc>
     </url>
 
-    <!-- 最新消息 -->
     <url>
         <loc>https://chen2717711-lang.github.io/zhoupu-tea/news-list.html</loc>
     </url>
 
-    <!-- 最新消息內容 -->
-    <url>
-        <loc>https://chen2717711-lang.github.io/zhoupu-tea/news-detail.html</loc>
-    </url>
-
-    <!-- 作品展示 -->
     <url>
         <loc>https://chen2717711-lang.github.io/zhoupu-tea/gallery-list.html</loc>
     </url>
 
-    <!-- 茶品 -->
     <url>
         <loc>https://chen2717711-lang.github.io/zhoupu-tea/tea.html</loc>
     </url>
 
-    <!-- 聯絡我們 -->
     <url>
         <loc>https://chen2717711-lang.github.io/zhoupu-tea/contact.html</loc>
     </url>
