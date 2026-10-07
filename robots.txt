@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://chen2717711-lang.github.io/zhoupu-tea/sitemap.xml
