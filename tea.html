@@ -811,7 +811,10 @@ async function saveProduct(button) {
 
 
 
-/* 刪除茶葉產品 */
+/* ==========================
+   刪除茶葉產品
+   同時刪除 Storage 商品圖片
+   ========================== */
 
 async function deleteProduct(button) {
 
@@ -851,6 +854,150 @@ async function deleteProduct(button) {
     if (!confirmed) return;
 
 
+    /* ==========================
+       第 1 步：先取得商品資料
+       ========================== */
+
+    const {
+        data: productData,
+        error: getError
+    } =
+        await supabaseClient
+            .from('site_content')
+            .select('content')
+            .eq(
+                'id',
+                productId
+            )
+            .single();
+
+
+    if (getError) {
+
+        const message =
+            document.getElementById(
+                'message'
+            );
+
+        message.style.color =
+            '#c0392b';
+
+        message.textContent =
+            '取得商品資料失敗：' +
+            getError.message;
+
+        console.error(
+            getError
+        );
+
+        return;
+
+    }
+
+
+    /* ==========================
+       第 2 步：取得商品圖片網址
+       ========================== */
+
+    let imageUrl = '';
+
+
+    try {
+
+        const content =
+            JSON.parse(
+                productData.content
+            );
+
+
+        imageUrl =
+            content.image || '';
+
+    } catch (error) {
+
+        console.error(
+            '商品資料格式錯誤：',
+            error
+        );
+
+    }
+
+
+    /* ==========================
+       第 3 步：刪除 Storage 圖片
+       ========================== */
+
+    if (imageUrl) {
+
+        const marker =
+            '/storage/v1/object/public/site-images/';
+
+
+        const markerIndex =
+            imageUrl.indexOf(
+                marker
+            );
+
+
+        if (
+            markerIndex !== -1
+        ) {
+
+            const filePath =
+                imageUrl.substring(
+                    markerIndex +
+                    marker.length
+                );
+
+
+            console.log(
+                '準備刪除商品圖片：',
+                filePath
+            );
+
+
+            const {
+                error: storageError
+            } =
+                await supabaseClient
+                    .storage
+                    .from('site-images')
+                    .remove([
+                        filePath
+                    ]);
+
+
+            if (storageError) {
+
+                const message =
+                    document.getElementById(
+                        'message'
+                    );
+
+                message.style.color =
+                    '#c0392b';
+
+                message.textContent =
+                    '圖片刪除失敗：' +
+                    storageError.message;
+
+                console.error(
+                    storageError
+                );
+
+                return;
+
+            }
+
+        }
+
+    }
+
+
+    /* ==========================
+       第 4 步：刪除資料庫商品
+       ========================== */
+
     const {
         error
     } =
@@ -866,7 +1013,9 @@ async function deleteProduct(button) {
     if (error) {
 
         const message =
-            document.getElementById('message');
+            document.getElementById(
+                'message'
+            );
 
 
         message.style.color =
@@ -888,13 +1037,19 @@ async function deleteProduct(button) {
     }
 
 
+    /* ==========================
+       完成
+       ========================== */
+
     box.remove();
 
     updateProductNumbers();
 
 
     const message =
-        document.getElementById('message');
+        document.getElementById(
+            'message'
+        );
 
 
     message.style.color =
@@ -902,7 +1057,7 @@ async function deleteProduct(button) {
 
 
     message.textContent =
-        '✓ 茶葉產品已刪除！';
+        '✓ 茶葉產品與圖片已刪除！';
 
 }
 

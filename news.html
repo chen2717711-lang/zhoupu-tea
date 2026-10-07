@@ -1435,52 +1435,234 @@ else {
     }
 
 
-    // 刪除消息
+    // ==========================
+// 刪除消息
+// 同時刪除 Storage 裡的照片
+// ==========================
 
-    async function deleteNews(id) {
+async function deleteNews(id) {
 
-
-        const ok =
-            confirm(
-                '確定要刪除這則最新消息嗎？'
-            );
-
-
-        if (!ok) return;
-
-
-        const { error } =
-            await supabaseClient
-                .from('site_content')
-                .delete()
-                .eq('id', id);
-
-
-        if (error) {
-
-            console.error(
-                '刪除消息失敗：',
-                error
-            );
-
-            alert(
-                '❌ 刪除失敗'
-            );
-
-            return;
-
-        }
-
-
-        alert(
-            '✅ 最新消息已刪除'
+    const ok =
+        confirm(
+            '確定要刪除這則最新消息嗎？'
         );
 
+    if (!ok) return;
 
-        loadNews();
+
+    // ==========================
+    // 第 1 步：先取得這篇消息
+    // ==========================
+
+    const {
+        data: newsData,
+        error: getError
+    } =
+        await supabaseClient
+            .from('site_content')
+            .select('content')
+            .eq('id', id)
+            .single();
+
+
+    if (getError) {
+
+        console.error(
+            '取得消息失敗：',
+            getError
+        );
+
+        alert(
+            '❌ 無法取得消息資料'
+        );
+
+        return;
 
     }
 
+
+    // ==========================
+    // 第 2 步：讀取圖片網址
+    // ==========================
+
+    let newsContent = {};
+
+    try {
+
+        newsContent =
+            JSON.parse(
+                newsData.content
+            );
+
+    } catch (error) {
+
+        console.error(
+            '消息資料格式錯誤：',
+            error
+        );
+
+    }
+
+
+    let imageUrls = [];
+
+
+    // 新格式：images
+    if (
+        Array.isArray(
+            newsContent.images
+        )
+    ) {
+
+        imageUrls =
+            newsContent.images;
+
+    }
+
+    // 舊格式：image
+    else if (
+        newsContent.image
+    ) {
+
+        imageUrls = [
+            newsContent.image
+        ];
+
+    }
+
+
+    // ==========================
+    // 第 3 步：刪除 Storage 照片
+    // ==========================
+
+    for (
+        let i = 0;
+        i < imageUrls.length;
+        i++
+    ) {
+
+        const imageUrl =
+            imageUrls[i];
+
+
+        try {
+
+            // 找出 Storage 裡面的檔案路徑
+            const marker =
+                '/storage/v1/object/public/site-images/';
+
+
+            const markerIndex =
+                imageUrl.indexOf(
+                    marker
+                );
+
+
+            if (
+                markerIndex === -1
+            ) {
+
+                console.warn(
+                    '找不到 Storage 路徑：',
+                    imageUrl
+                );
+
+                continue;
+
+            }
+
+
+            const filePath =
+                imageUrl.substring(
+                    markerIndex +
+                    marker.length
+                );
+
+
+            console.log(
+                '準備刪除照片：',
+                filePath
+            );
+
+
+            const {
+                error: storageError
+            } =
+                await supabaseClient
+                    .storage
+                    .from('site-images')
+                    .remove([
+                        filePath
+                    ]);
+
+
+            if (storageError) {
+
+                console.error(
+                    'Storage 照片刪除失敗：',
+                    storageError
+                );
+
+            } else {
+
+                console.log(
+                    '照片已刪除：',
+                    filePath
+                );
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                '處理照片刪除失敗：',
+                error
+            );
+
+        }
+
+    }
+
+
+    // ==========================
+    // 第 4 步：刪除資料庫消息
+    // ==========================
+
+    const { error } =
+        await supabaseClient
+            .from('site_content')
+            .delete()
+            .eq('id', id);
+
+
+    if (error) {
+
+        console.error(
+            '刪除消息失敗：',
+            error
+        );
+
+        alert(
+            '❌ 消息刪除失敗'
+        );
+
+        return;
+
+    }
+
+
+    // ==========================
+    // 完成
+    // ==========================
+
+    alert(
+        '✅ 最新消息與照片已刪除'
+    );
+
+
+    loadNews();
+
+}
 
     // 取消編輯
 

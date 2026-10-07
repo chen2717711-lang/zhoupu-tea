@@ -1006,6 +1006,7 @@ img.setAttribute(
 
 // ==========================
 // 刪除照片
+// 同時刪除 Storage 裡的圖片
 // ==========================
 
 async function deleteGallery(id) {
@@ -1021,6 +1022,131 @@ async function deleteGallery(id) {
     }
 
 
+    // ==========================
+    // 第 1 步：先取得照片網址
+    // ==========================
+
+    const {
+        data: photoData,
+        error: getError
+    } =
+        await supabaseClient
+            .from('site_content')
+            .select('content')
+            .eq(
+                'id',
+                id
+            )
+            .single();
+
+
+    if (getError) {
+
+        alert(
+            '取得照片資料失敗：' +
+            getError.message
+        );
+
+        return;
+
+    }
+
+
+    // ==========================
+    // 第 2 步：讀取圖片網址
+    // ==========================
+
+    let imageUrl = '';
+
+    try {
+
+        const content =
+            JSON.parse(
+                photoData.content
+            );
+
+        imageUrl =
+            content.image || '';
+
+    } catch (error) {
+
+        console.error(
+            '照片資料格式錯誤：',
+            error
+        );
+
+    }
+
+
+    // ==========================
+    // 第 3 步：刪除 Storage 圖片
+    // ==========================
+
+    if (imageUrl) {
+
+        const marker =
+            '/storage/v1/object/public/site-images/';
+
+
+        const markerIndex =
+            imageUrl.indexOf(
+                marker
+            );
+
+
+        if (
+            markerIndex !== -1
+        ) {
+
+            const filePath =
+                imageUrl.substring(
+                    markerIndex +
+                    marker.length
+                );
+
+
+            console.log(
+                '準備刪除 Storage 圖片：',
+                filePath
+            );
+
+
+            const {
+                error: storageError
+            } =
+                await supabaseClient
+                    .storage
+                    .from('site-images')
+                    .remove([
+                        filePath
+                    ]);
+
+
+            if (storageError) {
+
+                console.error(
+                    'Storage 圖片刪除失敗：',
+                    storageError
+                );
+
+                alert(
+                    '❌ Storage 圖片刪除失敗：' +
+                    storageError.message
+                );
+
+                return;
+
+            }
+
+        }
+
+    }
+
+
+    // ==========================
+    // 第 4 步：刪除資料庫紀錄
+    // ==========================
+
     const { error } =
         await supabaseClient
             .from('site_content')
@@ -1034,13 +1160,22 @@ async function deleteGallery(id) {
     if (error) {
 
         alert(
-            '刪除失敗：' +
+            '刪除資料庫紀錄失敗：' +
             error.message
         );
 
         return;
 
     }
+
+
+    // ==========================
+    // 完成
+    // ==========================
+
+    alert(
+        '✅ 照片與檔案已刪除'
+    );
 
 
     loadGallery();

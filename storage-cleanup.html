@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>照片容量管理｜拙璞山茶</title>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+    <style>
+
+        body {
+            font-family:
+                Arial,
+                "Noto Sans TC",
+                sans-serif;
+
+            background: #f5f5f5;
+
+            margin: 0;
+
+            padding: 30px;
+
+            color: #333;
+        }
+
+
+        .container {
+
+            max-width: 1000px;
+
+            margin: 0 auto;
+
+            background: white;
+
+            padding: 30px;
+
+            border-radius: 12px;
+
+            box-shadow:
+                0 2px 10px
+                rgba(0,0,0,0.08);
+        }
+
+
+        h1 {
+
+            margin-top: 0;
+
+            color: #315b3b;
+        }
+
+
+        .back {
+
+            display: inline-block;
+
+            margin-bottom: 20px;
+
+            color: #315b3b;
+
+            text-decoration: none;
+        }
+
+
+        button {
+
+            padding: 12px 24px;
+
+            border: none;
+
+            border-radius: 8px;
+
+            background: #315b3b;
+
+            color: white;
+
+            font-size: 15px;
+
+            cursor: pointer;
+        }
+
+
+        button:hover {
+
+            opacity: 0.9;
+        }
+
+
+        #message {
+
+            margin-top: 20px;
+
+            padding: 15px;
+
+            border-radius: 8px;
+
+            background: #f1f1f1;
+        }
+
+
+        .summary {
+
+            margin-top: 20px;
+
+            padding: 15px;
+
+            background: #f7f7f7;
+
+            border-radius: 8px;
+        }
+
+
+        .file-list {
+
+            margin-top: 20px;
+        }
+
+
+        .file-item {
+
+            display: flex;
+
+            justify-content:
+                space-between;
+
+            align-items: center;
+
+            padding: 10px 12px;
+
+            margin-bottom: 6px;
+
+            background: #fafafa;
+
+            border: 1px solid #eee;
+
+            border-radius: 6px;
+
+            word-break: break-all;
+        }
+
+
+        .unused {
+
+            color: #b44;
+        }
+
+
+        .used {
+
+            color: #2e7d32;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <a
+        href="dashboard.html"
+        class="back">
+        ← 返回後台
+    </a>
+
+
+    <h1>
+        📦 照片容量管理
+    </h1>
+
+
+    <p>
+        這裡會檢查 Storage 裡的照片，
+        找出網站目前沒有使用的舊照片。
+    </p>
+
+
+    <p>
+        <strong>
+            ⚠️ 目前只會掃描，不會刪除任何照片。
+        </strong>
+    </p>
+
+
+    <button
+        onclick="scanStorage()">
+        🔍 開始掃描
+    </button>
+
+
+    <div
+        id="message">
+        尚未開始掃描。
+    </div>
+
+
+    <div
+        id="summary">
+    </div>
+
+
+    <div
+        id="fileList"
+        class="file-list">
+    </div>
+
+
+</div>
+
+
+<script>
+
+
+// ==========================
+// Supabase 設定
+// ==========================
+
+const SUPABASE_URL =
+    'https://tbakknfdijlwzggqrrzc.supabase.co';
+
+
+// ⚠️ 這裡請貼上你原本其他後台頁面使用的
+// SUPABASE_KEY
+//
+// 不要使用新的 Key。
+
+
+const SUPABASE_KEY =
+    'sb_publishable_C4MU15NKj3NsB24466kMYQ_G9OQT93-';
+
+
+const supabaseClient =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+// ==========================
+// 開始掃描
+// ==========================
+
+async function scanStorage() {
+
+    const message =
+        document.getElementById(
+            'message'
+        );
+
+
+    const summary =
+        document.getElementById(
+            'summary'
+        );
+
+
+    const fileList =
+        document.getElementById(
+            'fileList'
+        );
+
+
+    message.textContent =
+        '⏳ 正在掃描，請稍候...';
+
+
+    summary.innerHTML = '';
+
+    fileList.innerHTML = '';
+
+
+    try {
+
+
+        // ==========================
+        // 第 1 步
+        // 取得資料庫裡目前使用的圖片
+        // ==========================
+
+        const {
+            data: databaseRows,
+            error: databaseError
+        } =
+            await supabaseClient
+                .from('site_content')
+                .select(
+                    'content'
+                );
+
+
+        if (databaseError) {
+
+            throw databaseError;
+
+        }
+
+
+        const usedImages =
+            new Set();
+
+
+        for (
+            const row
+            of databaseRows
+        ) {
+
+            if (!row.content) {
+
+                continue;
+
+            }
+
+
+            try {
+
+                const content =
+                    JSON.parse(
+                        row.content
+                    );
+
+
+                // ==========================
+                // 單張圖片
+                // ==========================
+
+                if (
+                    content.image
+                ) {
+
+                    usedImages.add(
+                        content.image
+                    );
+
+                }
+
+
+                // ==========================
+                // 多張圖片
+                // ==========================
+
+                if (
+                    Array.isArray(
+                        content.images
+                    )
+                ) {
+
+                    for (
+                        const image
+                        of content.images
+                    ) {
+
+                        if (image) {
+
+                            usedImages.add(
+                                image
+                            );
+
+                        }
+
+                    }
+
+                }
+
+            } catch (error) {
+
+                // 不是 JSON 的資料略過
+
+            }
+
+        }
+
+
+        console.log(
+            '目前資料庫使用中的圖片：',
+            usedImages
+        );
+
+
+        // ==========================
+        // 第 2 步
+        // 讀取 Storage
+        // ==========================
+
+        const {
+            data: storageFiles,
+            error: storageError
+        } =
+            await supabaseClient
+                .storage
+                .from('site-images')
+                .list(
+                    '',
+                    {
+                        limit: 1000,
+
+                        sortBy: {
+                            column:
+                                'name',
+
+                            order:
+                                'asc'
+                        }
+                    }
+                );
+
+
+        if (storageError) {
+
+            throw storageError;
+
+        }
+
+
+        let allFiles = [];
+
+
+        // ==========================
+        // Storage 根目錄的檔案
+        // ==========================
+
+        for (
+            const file
+            of storageFiles
+        ) {
+
+            if (
+                file.name
+            ) {
+
+                allFiles.push(
+                    file.name
+                );
+
+            }
+
+        }
+
+
+        // ==========================
+        // news 資料夾
+        // ==========================
+
+        const {
+            data: newsFiles,
+            error: newsError
+        } =
+            await supabaseClient
+                .storage
+                .from('site-images')
+                .list(
+                    'news',
+                    {
+                        limit: 1000,
+
+                        sortBy: {
+                            column:
+                                'name',
+
+                            order:
+                                'asc'
+                        }
+                    }
+                );
+
+
+        if (!newsError) {
+
+            for (
+                const file
+                of newsFiles
+            ) {
+
+                if (
+                    file.name
+                ) {
+
+                    allFiles.push(
+                        'news/' +
+                        file.name
+                    );
+
+                }
+
+            }
+
+        }
+
+
+        // ==========================
+        // gallery 資料夾
+        // ==========================
+
+        const {
+            data: galleryFiles,
+            error: galleryError
+        } =
+            await supabaseClient
+                .storage
+                .from('site-images')
+                .list(
+                    'gallery',
+                    {
+                        limit: 1000,
+
+                        sortBy: {
+                            column:
+                                'name',
+
+                            order:
+                                'asc'
+                        }
+                    }
+                );
+
+
+        if (!galleryError) {
+
+            for (
+                const file
+                of galleryFiles
+            ) {
+
+                if (
+                    file.name
+                ) {
+
+                    allFiles.push(
+                        'gallery/' +
+                        file.name
+                    );
+
+                }
+
+            }
+
+        }
+
+
+        // ==========================
+        // 比對
+        // ==========================
+
+        const usedFiles = [];
+
+        const unusedFiles = [];
+
+
+        for (
+            const filePath
+            of allFiles
+        ) {
+
+            const publicUrl =
+                SUPABASE_URL +
+                '/storage/v1/object/public/site-images/' +
+                filePath;
+
+
+            if (
+                usedImages.has(
+                    publicUrl
+                )
+            ) {
+
+                usedFiles.push(
+                    filePath
+                );
+
+            } else {
+
+                unusedFiles.push(
+                    filePath
+                );
+
+            }
+
+        }
+
+
+        // ==========================
+        // 顯示結果
+        // ==========================
+
+        message.textContent =
+            '✅ 掃描完成，目前沒有刪除任何檔案。';
+
+
+        summary.innerHTML =
+
+            '<strong>掃描結果</strong>' +
+
+            '<br><br>' +
+
+            'Storage 檔案：' +
+            allFiles.length +
+            ' 個' +
+
+            '<br>' +
+
+            '網站正在使用：' +
+            usedFiles.length +
+            ' 個' +
+
+            '<br>' +
+
+            '⚠️ 可能沒有使用：' +
+            unusedFiles.length +
+            ' 個';
+
+
+        // ==========================
+        // 顯示未使用檔案
+        // ==========================
+
+        if (
+            unusedFiles.length > 0
+        ) {
+
+            const title =
+                document.createElement(
+                    'h3'
+                );
+
+
+            title.textContent =
+                '⚠️ 可能可以刪除的照片';
+
+
+            fileList.appendChild(
+                title
+            );
+
+
+            for (
+                const filePath
+                of unusedFiles
+            ) {
+
+                const item =
+                    document.createElement(
+                        'div'
+                    );
+
+
+                item.className =
+                    'file-item unused';
+
+
+                item.textContent =
+                    filePath;
+
+
+                fileList.appendChild(
+                    item
+                );
+
+            }
+
+        } else {
+
+            fileList.innerHTML =
+                '<p class="used">' +
+                '🎉 沒有找到明顯的未使用照片。' +
+                '</p>';
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            '掃描失敗：',
+            error
+        );
+
+
+        message.textContent =
+            '❌ 掃描失敗：' +
+            error.message;
+
+    }
+
+}
+
+
+</script>
+
+
+</body>
+
+</html>
