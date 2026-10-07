@@ -1,24 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-
-    <url>
-        <loc>https://chen2717711-lang.github.io/zhoupu-tea/</loc>
-    </url>
-
-    <url>
-        <loc>https://chen2717711-lang.github.io/zhoupu-tea/news-list.html</loc>
-    </url>
-
-    <url>
-        <loc>https://chen2717711-lang.github.io/zhoupu-tea/gallery-list.html</loc>
-    </url>
-
-    <url>
-        <loc>https://chen2717711-lang.github.io/zhoupu-tea/tea.html</loc>
-    </url>
-
-    <url>
-        <loc>https://chen2717711-lang.github.io/zhoupu-tea/contact.html</loc>
-    </url>
-
+  <url>
+    <loc>https://chen2717711-lang.github.io/zhoupu-tea/</loc>
+  </url>
 </urlset>
