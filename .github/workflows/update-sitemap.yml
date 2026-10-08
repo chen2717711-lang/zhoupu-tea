@@ -26,7 +26,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
-          python - <<'PY'
+          cat > update_sitemap.py <<'PY'
           import os
           import json
           import urllib.request
@@ -42,7 +42,7 @@ jobs:
 
           base_url = "https://chen2717711-lang.github.io/zhoupu-tea/"
 
-              urls = {
+          urls = {
               base_url,
               base_url + "news-list.html",
               base_url + "gallery-list.html",
@@ -135,8 +135,9 @@ jobs:
               len(urls),
               "個網址"
           )
-
           PY
+
+          python update_sitemap.py
 
       - name: 發布 Sitemap
         run: |
