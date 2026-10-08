@@ -42,7 +42,7 @@ jobs:
 
           base_url = "https://chen2717711-lang.github.io/zhoupu-tea/"
 
-                    urls = {
+              urls = {
               base_url,
               base_url + "news-list.html",
               base_url + "gallery-list.html",
@@ -68,7 +68,7 @@ jobs:
                       response.read().decode("utf-8")
                   )
 
-           # 讀取新聞
+          # 讀取新聞
           try:
               news_rows = get_rows("news")
 
