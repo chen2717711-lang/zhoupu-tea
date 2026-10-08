@@ -2732,6 +2732,11 @@ async function loadTeaProduct() {
 
             card.className =
                 'product-card';
+                card.style.cursor = 'pointer';
+
+card.onclick = function () {
+    window.location.href = 'tea-detail.html?id=' + row.id;
+};
 
 
             card.innerHTML = `
