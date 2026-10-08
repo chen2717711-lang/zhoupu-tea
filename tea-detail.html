@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>茶品｜拙璞山茶 ZHOUPU TEA</title>
+
+    <meta
+        name="description"
+        content="拙璞山茶 ZHOUPU TEA｜高雄六龜高山茶"
+    >
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family:
+                -apple-system,
+                BlinkMacSystemFont,
+                "Noto Sans TC",
+                "Microsoft JhengHei",
+                sans-serif;
+            background: #f7f5f0;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 50px 20px;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-bottom: 30px;
+            color: #555;
+            text-decoration: none;
+        }
+
+        .product {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.08);
+        }
+
+        .product-image {
+            width: 100%;
+            background: #eee;
+        }
+
+        .product-image img {
+            display: block;
+            width: 100%;
+            max-height: 600px;
+            object-fit: contain;
+        }
+
+        .product-info {
+            padding: 35px;
+        }
+
+        .product-info h1 {
+            margin-top: 0;
+            font-size: 32px;
+            line-height: 1.4;
+        }
+
+        .price {
+            margin: 20px 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .description {
+            font-size: 17px;
+            line-height: 2;
+            white-space: pre-line;
+        }
+
+        .shopee-button {
+            display: inline-block;
+            margin-top: 25px;
+            padding: 12px 24px;
+            background: #ee4d2d;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 80px 20px;
+            font-size: 18px;
+        }
+
+        .error {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        @media (max-width: 600px) {
+
+            .container {
+                padding: 25px 15px;
+            }
+
+            .product-info {
+                padding: 25px 20px;
+            }
+
+            .product-info h1 {
+                font-size: 26px;
+            }
+
+            .description {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="container">
+
+        <a
+            href="index.html"
+            class="back-button"
+        >
+            ← 回到首頁
+        </a>
+
+        <div
+            id="loading"
+            class="loading"
+        >
+            正在載入茶品……
+        </div>
+
+        <div
+            id="product"
+            class="product"
+            style="display:none;"
+        >
+
+            <div class="product-image">
+                <img
+                    id="productImage"
+                    src=""
+                    alt=""
+                >
+            </div>
+
+            <div class="product-info">
+
+                <h1 id="productName"></h1>
+
+                <div
+                    id="productPrice"
+                    class="price"
+                ></div>
+
+                <div
+                    id="productDescription"
+                    class="description"
+                ></div>
+
+                <a
+                    id="shopeeButton"
+                    class="shopee-button"
+                    href="#"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style="display:none;"
+                >
+                    前往蝦皮購買 →
+                </a>
+
+            </div>
+
+        </div>
+
+        <div
+            id="error"
+            class="error"
+            style="display:none;"
+        >
+            找不到這款茶品。
+        </div>
+
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+
+        const SUPABASE_URL =
+            'https://tbakknfdijlwzggqrrzc.supabase.co';
+
+        const SUPABASE_KEY =
+            'sb_publishable_C4MU15NKj3NsB24466kMYQ_G9OQT93-';
+
+        const supabaseClient =
+            window.supabase.createClient(
+                SUPABASE_URL,
+                SUPABASE_KEY
+            );
+
+
+        async function loadProduct() {
+
+            const params =
+                new URLSearchParams(
+                    window.location.search
+                );
+
+            const productId =
+                params.get('id');
+
+
+            if (!productId) {
+
+                showError();
+
+                return;
+            }
+
+
+            const {
+                data,
+                error
+            } =
+                await supabaseClient
+                    .from('site_content')
+                    .select('id, content')
+                    .eq('id', productId)
+                    .eq('key', 'tea_product')
+                    .single();
+
+
+            if (error || !data) {
+
+                console.error(
+                    '找不到茶品：',
+                    error
+                );
+
+                showError();
+
+                return;
+            }
+
+
+            try {
+
+                const product =
+                    JSON.parse(data.content);
+
+
+                document.title =
+                    `${product.name || '茶品'}｜拙璞山茶 ZHOUPU TEA`;
+
+
+                const description =
+                    product.description ||
+                    '拙璞山茶 ZHOUPU TEA｜高雄六龜高山茶';
+
+
+                const metaDescription =
+                    document.querySelector(
+                        'meta[name="description"]'
+                    );
+
+
+                if (metaDescription) {
+
+                    metaDescription.setAttribute(
+                        'content',
+                        description
+                    );
+
+                }
+
+
+                document.getElementById(
+                    'productName'
+                ).textContent =
+                    product.name || '';
+
+
+                document.getElementById(
+                    'productDescription'
+                ).textContent =
+                    product.description || '';
+
+
+                if (product.price) {
+
+                    document.getElementById(
+                        'productPrice'
+                    ).textContent =
+                        'NT$ ' + product.price;
+
+                }
+
+
+                if (product.image) {
+
+                    const image =
+                        document.getElementById(
+                            'productImage'
+                        );
+
+                    image.src =
+                        product.image;
+
+                    image.alt =
+                        product.name || '拙璞山茶茶品';
+
+                } else {
+
+                    document.querySelector(
+                        '.product-image'
+                    ).style.display =
+                        'none';
+
+                }
+
+
+                if (product.shopee) {
+
+                    const button =
+                        document.getElementById(
+                            'shopeeButton'
+                        );
+
+                    button.href =
+                        product.shopee;
+
+                    button.style.display =
+                        'inline-block';
+
+                }
+
+
+                document.getElementById(
+                    'loading'
+                ).style.display =
+                    'none';
+
+
+                document.getElementById(
+                    'product'
+                ).style.display =
+                    'block';
+
+
+            } catch (e) {
+
+                console.error(
+                    '茶品資料格式錯誤：',
+                    e
+                );
+
+                showError();
+
+            }
+
+        }
+
+
+        function showError() {
+
+            document.getElementById(
+                'loading'
+            ).style.display =
+                'none';
+
+            document.getElementById(
+                'product'
+            ).style.display =
+                'none';
+
+            document.getElementById(
+                'error'
+            ).style.display =
+                'block';
+
+        }
+
+
+        loadProduct();
+
+    </script>
+
+</body>
+</html>
