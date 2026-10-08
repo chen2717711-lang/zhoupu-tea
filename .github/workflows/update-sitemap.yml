@@ -42,18 +42,18 @@ jobs:
 
           base_url = "https://chen2717711-lang.github.io/zhoupu-tea/"
 
-          urls = {
+                    urls = {
               base_url,
               base_url + "news-list.html",
               base_url + "gallery-list.html",
               base_url + "tea.html"
           }
 
-          def get_content(key):
+          def get_rows(key):
               url = (
                   supabase_url
                   + "/rest/v1/site_content"
-                  + "?select=content"
+                  + "?select=id,content"
                   + "&key=eq."
                   + key
               )
@@ -64,72 +64,44 @@ jobs:
               )
 
               with urllib.request.urlopen(request) as response:
-                  data = json.loads(
+                  return json.loads(
                       response.read().decode("utf-8")
                   )
 
-              if not data:
-                  return None
-
-              content = data[0].get("content")
-
-              if isinstance(content, str):
-                  try:
-                      return json.loads(content)
-                  except Exception:
-                      return content
-
-              return content
-
-          def find_ids(data):
-              ids = set()
-
-              if isinstance(data, dict):
-                  if "id" in data:
-                      value = data["id"]
-
-                      if isinstance(value, (int, str)):
-                          ids.add(str(value))
-
-                  for value in data.values():
-                      ids.update(find_ids(value))
-
-              elif isinstance(data, list):
-                  for item in data:
-                      ids.update(find_ids(item))
-
-              return ids
-
-          # 讀取新聞
+           # 讀取新聞
           try:
-              news_data = get_content("news")
-              news_ids = find_ids(news_data)
+              news_rows = get_rows("news")
 
-              for news_id in news_ids:
-                  urls.add(
-                      base_url
-                      + "news-detail.html?id="
-                      + news_id
-                  )
+              for row in news_rows:
+                  news_id = row.get("id")
 
-              print("找到新聞詳細頁：", len(news_ids), "個")
+                  if news_id is not None:
+                      urls.add(
+                          base_url
+                          + "news-detail.html?id="
+                          + str(news_id)
+                      )
+
+              print("找到新聞詳細頁：", len(news_rows), "個")
 
           except Exception as e:
               print("讀取新聞失敗：", e)
 
           # 讀取茶品
           try:
-              tea_data = get_content("tea_product")
-              tea_ids = find_ids(tea_data)
+              tea_rows = get_rows("tea_product")
 
-              for tea_id in tea_ids:
-                  urls.add(
-                      base_url
-                      + "tea-detail.html?id="
-                      + tea_id
-                  )
+              for row in tea_rows:
+                  tea_id = row.get("id")
 
-              print("找到茶品詳細頁：", len(tea_ids), "個")
+                  if tea_id is not None:
+                      urls.add(
+                          base_url
+                          + "tea-detail.html?id="
+                          + str(tea_id)
+                      )
+
+              print("找到茶品詳細頁：", len(tea_rows), "個")
 
           except Exception as e:
               print("讀取茶品失敗：", e)
