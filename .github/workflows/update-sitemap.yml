@@ -49,11 +49,11 @@ jobs:
               base_url + "tea.html"
           }
 
-          def get_data(key):
+          def get_content(key):
               url = (
                   supabase_url
                   + "/rest/v1/site_content"
-                  + "?select=id,content"
+                  + "?select=content"
                   + "&key=eq."
                   + key
               )
@@ -64,40 +64,77 @@ jobs:
               )
 
               with urllib.request.urlopen(request) as response:
-                  return json.loads(response.read().decode("utf-8"))
+                  data = json.loads(
+                      response.read().decode("utf-8")
+                  )
 
+              if not data:
+                  return None
+
+              content = data[0].get("content")
+
+              if isinstance(content, str):
+                  try:
+                      return json.loads(content)
+                  except Exception:
+                      return content
+
+              return content
+
+          def find_ids(data):
+              ids = set()
+
+              if isinstance(data, dict):
+                  if "id" in data:
+                      value = data["id"]
+
+                      if isinstance(value, (int, str)):
+                          ids.add(str(value))
+
+                  for value in data.values():
+                      ids.update(find_ids(value))
+
+              elif isinstance(data, list):
+                  for item in data:
+                      ids.update(find_ids(item))
+
+              return ids
+
+          # 讀取新聞
           try:
-              news = get_data("news")
+              news_data = get_content("news")
+              news_ids = find_ids(news_data)
 
-              for item in news:
-                  news_id = item.get("id")
+              for news_id in news_ids:
+                  urls.add(
+                      base_url
+                      + "news-detail.html?id="
+                      + news_id
+                  )
 
-                  if news_id:
-                      urls.add(
-                          base_url
-                          + "news-detail.html?id="
-                          + str(news_id)
-                      )
+              print("找到新聞詳細頁：", len(news_ids), "個")
 
           except Exception as e:
               print("讀取新聞失敗：", e)
 
+          # 讀取茶品
           try:
-              tea = get_data("tea_product")
+              tea_data = get_content("tea_product")
+              tea_ids = find_ids(tea_data)
 
-              for item in tea:
-                  tea_id = item.get("id")
+              for tea_id in tea_ids:
+                  urls.add(
+                      base_url
+                      + "tea-detail.html?id="
+                      + tea_id
+                  )
 
-                  if tea_id:
-                      urls.add(
-                          base_url
-                          + "tea-detail.html?id="
-                          + str(tea_id)
-                      )
+              print("找到茶品詳細頁：", len(tea_ids), "個")
 
           except Exception as e:
               print("讀取茶品失敗：", e)
 
+          # 建立 Sitemap
           sitemap = [
               '<?xml version="1.0" encoding="UTF-8"?>',
               '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
@@ -114,10 +151,19 @@ jobs:
 
           sitemap.append("</urlset>")
 
-          with open("sitemap.xml", "w", encoding="utf-8") as f:
+          with open(
+              "sitemap.xml",
+              "w",
+              encoding="utf-8"
+          ) as f:
               f.write("\n".join(sitemap))
 
-          print("Sitemap 更新完成，共", len(urls), "個網址")
+          print(
+              "Sitemap 更新完成，共",
+              len(urls),
+              "個網址"
+          )
+
           PY
 
       - name: 發布 Sitemap
