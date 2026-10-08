@@ -1,0 +1,129 @@
+name: 自動更新 Sitemap
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  update-sitemap:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 下載網站程式碼
+        uses: actions/checkout@v4
+
+      - name: 安裝 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: 建立 Sitemap
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          python - <<'PY'
+          import os
+          import json
+          import urllib.request
+          from xml.sax.saxutils import escape
+
+          supabase_url = os.environ["SUPABASE_URL"]
+          supabase_key = os.environ["SUPABASE_KEY"]
+
+          headers = {
+              "apikey": supabase_key,
+              "Authorization": f"Bearer {supabase_key}"
+          }
+
+          base_url = "https://chen2717711-lang.github.io/zhoupu-tea/"
+
+          urls = {
+              base_url,
+              base_url + "news-list.html",
+              base_url + "gallery-list.html",
+              base_url + "tea.html"
+          }
+
+          def get_data(key):
+              url = (
+                  supabase_url
+                  + "/rest/v1/site_content"
+                  + "?select=id,content"
+                  + "&key=eq."
+                  + key
+              )
+
+              request = urllib.request.Request(
+                  url,
+                  headers=headers
+              )
+
+              with urllib.request.urlopen(request) as response:
+                  return json.loads(response.read().decode("utf-8"))
+
+          try:
+              news = get_data("news")
+
+              for item in news:
+                  news_id = item.get("id")
+
+                  if news_id:
+                      urls.add(
+                          base_url
+                          + "news-detail.html?id="
+                          + str(news_id)
+                      )
+
+          except Exception as e:
+              print("讀取新聞失敗：", e)
+
+          try:
+              tea = get_data("tea_product")
+
+              for item in tea:
+                  tea_id = item.get("id")
+
+                  if tea_id:
+                      urls.add(
+                          base_url
+                          + "tea-detail.html?id="
+                          + str(tea_id)
+                      )
+
+          except Exception as e:
+              print("讀取茶品失敗：", e)
+
+          sitemap = [
+              '<?xml version="1.0" encoding="UTF-8"?>',
+              '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+          ]
+
+          for url in sorted(urls):
+              sitemap.append("  <url>")
+              sitemap.append(
+                  "    <loc>"
+                  + escape(url)
+                  + "</loc>"
+              )
+              sitemap.append("  </url>")
+
+          sitemap.append("</urlset>")
+
+          with open("sitemap.xml", "w", encoding="utf-8") as f:
+              f.write("\n".join(sitemap))
+
+          print("Sitemap 更新完成，共", len(urls), "個網址")
+          PY
+
+      - name: 發布 Sitemap
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sitemap.xml
+          git diff --cached --quiet || git commit -m "自動更新 sitemap"
+          git push
